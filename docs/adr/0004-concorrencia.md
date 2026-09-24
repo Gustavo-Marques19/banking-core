@@ -1,6 +1,6 @@
 # ADR-004: Controle de concorrência
 
-- Status: aceita (números de desempenho pendentes, medidos no M4). O mecanismo de lock e a atualização de saldo foram refinados pela [ADR-008](0008-imutabilidade-no-banco.md).
+- Status: aceita. O mecanismo de lock e a atualização de saldo foram refinados pela [ADR-008](0008-imutabilidade-no-banco.md).
 - Data: 2026-09-24
 
 ## Contexto
@@ -54,3 +54,18 @@ Proteções adicionais:
   - 100 × R$ 100 com saldo de R$ 1.000 → 10 sucessos, saldo 0;
   - A→B e B→A em laço concorrente → nenhum deadlock;
   - rodar a suíte de concorrência várias vezes no CI para expor instabilidade.
+
+## Medições
+
+`make bench`, no runner do GitHub Actions (4 CPUs, Ubuntu 24.04), com API, Postgres, RabbitMQ e workers na mesma máquina. Latência medida no cliente, 50 requisições simultâneas, transferências de R$ 1,00:
+
+| Cenário | Transferências | p50 | p95 | p99 | Vazão |
+|---|---|---|---|---|---|
+| Uma conta de origem disputada | 300 | 449 ms | 509 ms | 538 ms | 107/s |
+| 50 pares de contas independentes | 1.000 | 296 ms | 351 ms | 427 ms | 166/s |
+
+Leitura:
+
+- Na conta disputada, o lock serializa as operações como previsto: cerca de 9 ms por transferência, e a latência é quase toda fila (50 requisições esperando a mesma linha). Nenhuma falhou nem estourou o `lock_timeout`.
+- Contas independentes deveriam escalar bem mais que a disputada, e renderam só 55% a mais. A causa provável, não medida isoladamente, é a escrita na trilha de auditoria, que é serializada globalmente por advisory lock (M7). É o próximo gargalo a atacar se vazão importar, por exemplo particionando a cadeia de hash.
+- Os números servem para comparar desenhos no mesmo ambiente, não como capacidade de produção: tudo roda numa máquina de 4 CPUs compartilhada com o próprio gerador de carga.

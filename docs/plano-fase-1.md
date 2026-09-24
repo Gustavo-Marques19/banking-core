@@ -185,7 +185,7 @@ Cada milestone termina com **algo demonstrável e testado**. Não avance com tes
 - [x] Máquina de 2 cores para começar. Suba para 4 só se Testcontainers ficar lento, porque a cota gratuita é consumida proporcionalmente aos cores.
 - [x] Idle timeout de 30 min e retenção curta documentados no README. É configuração da conta de quem usa, não do repositório.
 - [x] RabbitMQ **não** entra agora. Ele é adicionado ao compose no M5.
-- [ ] Opcional: rodar o CI dentro do mesmo devcontainer (`devcontainers/ci`), garantindo que o CI e o ambiente de desenvolvimento sejam idênticos.
+- [x] Rodar os testes dentro do mesmo devcontainer (`devcontainers/ci`), no workflow `devcontainer`.
 
 **Critério do passo:** num repositório recém-clonado, "Open in Codespaces" → `dotnet test` passa sem instalar nada à mão. O README ganha o badge "Open in GitHub Codespaces".
 
@@ -217,79 +217,79 @@ Depois do ambiente pronto:
 **Critério:** é impossível, mesmo via SQL cru com a role `app`, criar um ledger inconsistente.
 
 ### M3: Identidade, Customer, Account, Deposit (4 a 6 dias)
-- [ ] JWT/OIDC com Keycloak, com roles `customer`, `operator` e `admin`.
-- [ ] Customer com CPF validado, criptografado e com blind index. CPF mascarado nos logs.
-- [ ] Account com vínculo ao `LedgerAccount` e status (Active, Blocked, Closed).
-- [ ] Deposit: só `operator`, com Idempotency-Key, lançando `D Funding / C Cliente`, limite e motivo.
-- [ ] `GET /balance` com `ledgerBalance` e `availableBalance` (iguais na Fase 1, ver ADR-006).
-- [ ] Autorização por recurso em todos os GET. Testes de BOLA (A lê a conta de B → 404).
+- [x] JWT/OIDC com Keycloak, com roles `customer`, `operator` e `admin`.
+- [x] Customer com CPF validado, criptografado e com blind index. CPF mascarado nos logs.
+- [x] Account com vínculo ao `LedgerAccount` e status (Active, Blocked, Closed).
+- [x] Deposit: só `operator`, com Idempotency-Key, lançando `D Funding / C Cliente`, limite e motivo.
+- [x] `GET /balance` com `ledgerBalance` e `availableBalance` (iguais na Fase 1, ver ADR-006).
+- [x] Autorização por recurso em todos os GET. Testes de BOLA (A lê a conta de B → 404).
 
 **Critério:** um cliente só enxerga o que é dele, e só o operador cria dinheiro, sempre com contrapartida.
 
 ### M4: Transferência interna + idempotência + concorrência (5 a 8 dias)
 É o milestone mais importante do projeto.
-- [ ] `POST /transfers` (interna), com `currency` e `Idempotency-Key` obrigatórios.
-- [ ] Tabela de idempotência `UNIQUE(client_id, operation, key)`, gravada na mesma transação, e `RequestHash` sobre JSON canônico. Mesma chave com payload diferente → 409 (erro de conflito).
-- [ ] Lock `FOR UPDATE` ordenado, status e saldo checados dentro do lock, `lock_timeout` configurado.
-- [ ] Limites por transação e diário.
-- [ ] **Testes-demo** (integração, Postgres real):
-  - [ ] saldo 100, duas transferências de 80 simultâneas → 1 sucesso e 1 INSUFFICIENT_FUNDS;
-  - [ ] saldo 1.000, 100 transferências de 100 → exatamente 10 sucessos, saldo 0, trial balance = 0;
-  - [ ] 100 requisições com a **mesma** chave → 1 LedgerTransaction e 100 respostas idênticas;
-  - [ ] A→B e B→A em loop concorrente → nenhum deadlock;
-  - [ ] A tenta debitar a conta de B → 404 e nada escrito.
-- [ ] ADR-004 atualizada com latência e throughput medidos (k6 ou NBomber).
+- [x] `POST /transfers` (interna), com `currency` e `Idempotency-Key` obrigatórios.
+- [x] Tabela de idempotência `UNIQUE(client_id, operation, key)`, gravada na mesma transação, e `RequestHash` sobre JSON canônico. Mesma chave com payload diferente → 409 (erro de conflito).
+- [x] Lock `FOR UPDATE` ordenado, status e saldo checados dentro do lock, `lock_timeout` configurado.
+- [x] Limites por transação e diário.
+- [x] **Testes-demo** (integração, Postgres real):
+  - [x] saldo 100, duas transferências de 80 simultâneas → 1 sucesso e 1 INSUFFICIENT_FUNDS;
+  - [x] saldo 1.000, 100 transferências de 100 → exatamente 10 sucessos, saldo 0, trial balance = 0;
+  - [x] 100 requisições com a **mesma** chave → 1 LedgerTransaction e 100 respostas idênticas;
+  - [x] A→B e B→A em loop concorrente → nenhum deadlock;
+  - [x] A tenta debitar a conta de B → 404 e nada escrito.
+- [x] ADR-004 atualizada com latência e throughput medidos (`make bench`, harness próprio em vez de k6 ou NBomber).
 
-**Critério:** o cenário principal da spec (§27) roda com um comando e passa sempre (rodar 50× no CI para caçar flakiness).
+**Critério:** o cenário principal da spec (§27) roda com um comando e passa sempre (rodar 50× no CI para caçar flakiness). Feito no workflow `stress`: 50 execuções seguidas de concorrência e 20 de mensageria, sem falha.
 
 ### M5: Outbox, Inbox, RabbitMQ (4 a 6 dias)
-- [ ] RabbitMQ adicionado ao compose do devcontainer, com usuário e senha próprios (nada de `guest/guest`) e porta de management privada.
-- [ ] `OutboxMessage` gravada na mesma transação, com `NextAttemptAt`, `RetryCount` e status `Pending/Published/DeadLettered`.
-- [ ] Worker com `SKIP LOCKED`, backoff exponencial com jitter e limpeza periódica.
-- [ ] **Consumidor real:** um read model de extrato (`account_statement`) ou um módulo de notificações, com **inbox** `UNIQUE(consumer, event_id)`.
-- [ ] Eventos versionados (`TransferCompleted.v1`), sem PII.
-- [ ] Testes:
-  - [ ] broker fora do ar → transferências continuam funcionando, eventos ficam pendentes e são publicados quando o broker volta;
-  - [ ] evento entregue duas vezes → efeito aplicado uma vez;
-  - [ ] app morta entre o commit e a publicação → o evento sai após o restart.
+- [x] RabbitMQ adicionado ao compose do devcontainer, com usuário e senha próprios (nada de `guest/guest`) e porta de management privada.
+- [x] `OutboxMessage` gravada na mesma transação, com `NextAttemptAt`, `RetryCount` e status `Pending/Published/DeadLettered`.
+- [x] Worker com `SKIP LOCKED`, backoff exponencial com jitter e limpeza periódica.
+- [x] **Consumidor real:** um read model de extrato (`account_statement`) ou um módulo de notificações, com **inbox** `UNIQUE(consumer, event_id)`.
+- [x] Eventos versionados (`TransferCompleted.v1`), sem PII.
+- [x] Testes:
+  - [x] broker fora do ar → transferências continuam funcionando, eventos ficam pendentes e são publicados quando o broker volta;
+  - [x] evento entregue duas vezes → efeito aplicado uma vez;
+  - [x] app morta entre o commit e a publicação → o evento sai após o restart.
 
 **Critério:** nenhum evento é perdido e nenhum é aplicado duas vezes, com o broker ou a app caindo no meio.
 
 ### M6: Transferência externa, Mock Provider, UNKNOWN, reconciliação (6 a 10 dias)
-- [ ] Contrato `IBankingProvider` com `SubmitTransferAsync`, `GetTransferStatusAsync` e callback/webhook simulado.
-- [ ] Mock com cenários **por requisição**: SUCCESS, FAILED, TIMEOUT, HTTP500, DUPLICATE, UNKNOWN, e sucesso tardio (timeout agora, sucesso visível depois).
-- [ ] Saga:
+- [x] Contrato `IBankingProvider` com `SubmitTransferAsync`, `GetTransferStatusAsync` e callback/webhook simulado.
+- [x] Mock com cenários **por requisição**: SUCCESS, FAILED, TIMEOUT, HTTP500, DUPLICATE, UNKNOWN, e sucesso tardio (timeout agora, sucesso visível depois).
+- [x] Saga:
   - Tx1: `D Cliente / C Clearing`, estado CREATED, outbox. O worker grava UNKNOWN antes de chamar o provider;
   - worker chama o provider fora da transação, com `transferId` como chave;
   - Tx2: confirma ou estorna.
-- [ ] Polly: timeout, retry **só** em erros seguros e circuit breaker.
-- [ ] UNKNOWN nunca vira FAILED automaticamente. O job de reconciliação consulta o status e resolve.
-- [ ] Mock gera extrato, e a reconciliação diária compara settlement com o extrato.
-- [ ] Testes para cada cenário, incluindo "timeout, mas o provider processou", que precisa terminar COMPLETED **sem débito duplo**.
+- [x] Polly: timeout e circuit breaker; retry só na consulta de status. O reenvio da ordem é feito pela reconciliação, depois de confirmar que o provider não a recebeu.
+- [x] UNKNOWN nunca vira FAILED automaticamente. O job de reconciliação consulta o status e resolve.
+- [x] Mock gera extrato, e a reconciliação diária compara settlement com o extrato.
+- [x] Testes para cada cenário, incluindo "timeout, mas o provider processou", que precisa terminar COMPLETED **sem débito duplo**.
 
 **Critério:** para cada cenário do mock, o estado final e os lançamentos são os esperados, e o saldo de clearing = Σ operações pendentes.
 
 ### M7: Observabilidade e auditoria (3 a 5 dias)
-- [ ] OpenTelemetry (traces, métricas e logs) no Aspire Dashboard, com trace atravessando API → DB → outbox → consumidor (propagando `traceparent` na mensagem).
-- [ ] Métricas da spec **com fonte real**: `ledger.balance_mismatch` vem do job de reconciliação, e `outbox.pending` é um gauge da tabela.
-- [ ] Serilog estruturado, com destructuring policy mascarando CPF.
-- [ ] Audit log com hash chain e job de verificação.
-- [ ] `/health` (liveness) e `/ready` (Postgres, e broker como degradado, não como falha).
+- [x] OpenTelemetry (traces, métricas e logs) no Aspire Dashboard, com trace atravessando API → DB → outbox → consumidor (propagando `traceparent` na mensagem).
+- [x] Métricas da spec **com fonte real**: `ledger.balance_mismatch` vem do job de reconciliação, e `outbox.pending` é um gauge da tabela.
+- [x] Serilog estruturado, com destructuring policy mascarando CPF.
+- [x] Audit log com hash chain e job de verificação.
+- [x] `/health` (liveness) e `/ready` (Postgres, e broker como degradado, não como falha).
 
 **Critério:** dado um `transferId`, você encontra o trace completo, o audit log e os eventos em menos de 1 minuto.
 
 ### M8: Hardening e portfólio (3 a 5 dias)
-- [ ] Maker-checker para estorno e depósito acima do limite.
-- [ ] Rate limiting por `sub`.
-- [ ] Trivy e SBOM no CI.
-- [ ] Threat model v1, cada ameaça com o teste que a cobre.
-- [ ] README com:
+- [x] Maker-checker para estorno e depósito acima do limite.
+- [x] Rate limiting por `sub`.
+- [x] Trivy e SBOM no CI.
+- [x] Threat model v1, cada ameaça com o teste que a cobre.
+- [x] README com:
   - diagrama;
   - "o que este projeto prova", com links para os testes;
   - como rodar a demo em 1 comando;
   - trade-offs e o que ficou de fora (e por quê).
-- [ ] Script de demo (`make demo`) rodando os cenários do §27 e do §25 com saída legível.
-- [ ] Vídeo/GIF de 2 minutos: concorrência, idempotência, broker caindo e audit log detectando adulteração.
+- [x] Script de demo (`make demo`) rodando os cenários do §27 e do §25 com saída legível, verificação automática e execução no CI.
+- [ ] Vídeo/GIF de 2 minutos: concorrência, idempotência, broker caindo e audit log detectando adulteração. **Não feito:** precisa ser gravado por uma pessoa. A saída de `make demo` no CI, reproduzível, cobre os mesmos cenários ([docs/demo-output.md](demo-output.md)).
 
 ---
 
@@ -299,6 +299,22 @@ Cada item aponta para um teste automatizado.
 
 | # | Critério | Prova |
 |---|---|---|
+| 1 | Nenhum lançamento desbalanceado persiste, nem via SQL cru | `LedgerDatabaseTests.Lancamento_desbalanceado_falha_no_commit` e testes vizinhos |
+| 2 | Ledger imutável no banco | `LedgerDatabaseTests.App_nao_altera_nem_apaga_o_ledger`, `Nem_o_dono_das_tabelas_altera_o_ledger` |
+| 3 | 100 × R$100 com saldo R$1.000 → 10 sucessos, saldo 0 | `ConcurrencyTests.Cem_transferencias_de_100_com_saldo_1000_exatamente_dez_passam`, 50 execuções no workflow `stress` |
+| 4 | Mesma Idempotency-Key × 100 → 1 operação | `ConcurrencyTests.Cem_requisicoes_com_a_mesma_chave_geram_uma_operacao` |
+| 5 | Chave reutilizada com payload diferente → 409 | `DepositTests.Mesma_chave_com_outro_pedido_responde_409` |
+| 6 | Usuário não move nem lê recurso alheio | `TransferTests.Cliente_nao_debita_conta_de_outro_e_nada_e_gravado`, `CustomerAndAccountTests.Cliente_nao_ve_conta_de_outro` |
+| 7 | Só `operator` deposita, sempre com contrapartida | `AuthenticationTests.Cliente_em_endpoint_de_operador_responde_403`, `DepositTests.Deposito_credita_o_cliente_e_debita_o_funding` |
+| 8 | Broker fora → nenhum evento perdido | `MessagingTests.Broker_fora_do_ar_nao_para_a_operacao_e_o_evento_sai_quando_ele_volta` |
+| 9 | Evento duplicado → efeito único | `MessagingTests.Evento_entregue_mais_de_uma_vez_tem_efeito_unico` |
+| 10 | Timeout do provider → UNKNOWN → reconciliado sem débito duplo | `ExternalTransferTests.Timeout_com_processamento_no_provider_conclui_sem_debito_duplo` |
+| 11 | Trial balance = 0 e projeção = ledger | Reconciliação (`ReconciliationService`) verificada em `ExternalTransferTests`; `LedgerAssertions` nos testes de concorrência |
+| 12 | Adulteração do audit log é detectada | `AuditTests.Alteracao_feita_por_superusuario_e_detectada` |
+| 13 | Nenhum CPF em log ou evento | `ObservabilityTests.Cpf_nao_aparece_em_log_nem_em_evento` |
+| 14 | Domain sem dependências de infra | `Banking.ArchitectureTests` |
+
+---|---|---|
 | 1 | Nenhum lançamento desbalanceado persiste, nem via SQL cru | Teste de integração com a role `app` |
 | 2 | Ledger imutável no banco | Teste de UPDATE/DELETE falhando |
 | 3 | 100 × R$100 com saldo R$1.000 → 10 sucessos, saldo 0 | Teste de concorrência (rodado N vezes) |

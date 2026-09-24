@@ -22,3 +22,10 @@ coverage*/
 
 # SO
 .DS_Store
+
+# Front: dependências e build (o build vai para o wwwroot do BFF)
+node_modules/
+web/*/dist/
+web/*/test-results/
+web/*/playwright-report/
+web/*/tsconfig.tsbuildinfo

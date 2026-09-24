@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Banking.Api/Banking.Api.csproj" />
     <Project Path="src/Banking.Application/Banking.Application.csproj" />
+    <Project Path="src/Banking.Bff/Banking.Bff.csproj" />
     <Project Path="src/Banking.Contracts/Banking.Contracts.csproj" />
     <Project Path="src/Banking.Domain/Banking.Domain.csproj" />
     <Project Path="src/Banking.Infrastructure/Banking.Infrastructure.csproj" />
@@ -10,5 +11,8 @@
     <Project Path="tests/Banking.ArchitectureTests/Banking.ArchitectureTests.csproj" />
     <Project Path="tests/Banking.IntegrationTests/Banking.IntegrationTests.csproj" />
     <Project Path="tests/Banking.UnitTests/Banking.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Banking.Demo/Banking.Demo.csproj" />
   </Folder>
 </Solution>

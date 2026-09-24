@@ -8,9 +8,18 @@
   "accessTokenLifespan": 300,
   "roles": {
     "realm": [
-      { "name": "customer", "description": "Dono de contas. Movimenta só as próprias." },
-      { "name": "operator", "description": "Faz depósitos de dinheiro fictício, com limite." },
-      { "name": "admin", "description": "Configura o mock do provider em desenvolvimento." }
+      {
+        "name": "customer",
+        "description": "Dono de contas. Movimenta só as próprias."
+      },
+      {
+        "name": "operator",
+        "description": "Faz depósitos de dinheiro fictício e aprova operações de outro operador."
+      },
+      {
+        "name": "admin",
+        "description": "Configura o mock do provider e verifica a trilha de auditoria."
+      }
     ]
   },
   "clients": [
@@ -24,6 +33,243 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "banking-cli",
+      "name": "Banking CLI (só desenvolvimento)",
+      "description": "Cliente público com password grant para a demo e testes manuais. Não usar fora de desenvolvimento.",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "audience banking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "banking-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "banking-backoffice",
+      "name": "Backoffice (BFF)",
+      "description": "Usado só pelo BFF do backoffice. Authorization code com PKCE; o navegador nunca recebe token. https://localhost é o host dos testes.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "backoffice-dev-only",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5180/signin-oidc",
+        "https://localhost/signin-oidc"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5180/##https://localhost/"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience banking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "banking-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "banking-web",
+      "name": "App do cliente (BFF)",
+      "description": "Usado só pelo BFF do app do cliente, mesma configuração do backoffice com outro segredo e outra porta. https://localhost é o host dos testes.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "web-dev-only",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5190/signin-oidc",
+        "https://localhost/signin-oidc"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5190/##https://localhost/"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience banking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "banking-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@banking.test",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
+    },
+    {
+      "username": "bruno",
+      "enabled": true,
+      "email": "bruno@banking.test",
+      "emailVerified": true,
+      "firstName": "Bruno",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "bruno-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
+    },
+    {
+      "username": "carla",
+      "enabled": true,
+      "email": "carla@banking.test",
+      "emailVerified": true,
+      "firstName": "Carla",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "carla-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
+    },
+    {
+      "username": "olga",
+      "enabled": true,
+      "email": "olga@banking.test",
+      "emailVerified": true,
+      "firstName": "Olga",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "olga-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "username": "otto",
+      "enabled": true,
+      "email": "otto@banking.test",
+      "emailVerified": true,
+      "firstName": "Otto",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "otto-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "username": "ada",
+      "enabled": true,
+      "email": "ada@banking.test",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ada-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
     }
   ]
 }

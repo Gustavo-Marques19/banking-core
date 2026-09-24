@@ -7,12 +7,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.Keycloak" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Banking.Api\Banking.Api.csproj" />
+    <ProjectReference Include="..\..\src\Banking.Bff\Banking.Bff.csproj" />
     <ProjectReference Include="..\..\src\Banking.Infrastructure\Banking.Infrastructure.csproj" />
   </ItemGroup>
 

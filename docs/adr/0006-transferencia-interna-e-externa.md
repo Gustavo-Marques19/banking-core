@@ -56,7 +56,7 @@ A fila de trabalho é a própria tabela de operações. O worker não depende do
 - Tx1 usa `external_id = "{operationId}:reservation"`.
 - A conclusão, seja liquidação ou estorno, usa `external_id = "{operationId}:resolution"`.
 - Como `external_id` é UNIQUE, o banco garante no máximo uma conclusão por operação. Webhook e reconciliação chegando juntos não conseguem liquidar duas vezes, nem liquidar e estornar a mesma operação.
-- Mudanças de estado usam coluna de versão (concorrência otimista). Quem perde a corrida relê o estado e, se já for terminal, não faz nada.
+- Mudanças de estado acontecem com a linha travada (`FOR UPDATE`). Quem chega depois relê o estado e, se já for terminal, não faz nada. (O M0 previa coluna de versão; a implementação usa o lock de linha, que a transição já precisa ter.)
 
 ### Contrato do provider
 

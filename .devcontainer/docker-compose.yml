@@ -10,15 +10,30 @@ services:
     environment:
       ConnectionStrings__Banking: Host=postgres;Database=banking;Username=banking_app;Password=${BANKING_APP_PASSWORD:-app-dev-only}
       BANKING_MIGRATOR_CONNECTION: Host=postgres;Database=banking;Username=banking_migrator;Password=${BANKING_MIGRATOR_PASSWORD:-migrator-dev-only}
+      # Tokens são pedidos e validados pelo mesmo endereço interno, então o issuer bate.
+      Auth__Authority: http://keycloak:8080/realms/banking
+      Auth__RequireHttpsMetadata: "false"
+      Messaging__Uri: amqp://banking:${RABBITMQ_PASSWORD:-rabbit-dev-only}@rabbitmq:5672/
+      # Comum às duas instâncias do BFF: emissor público, metadados pelo endereço interno (ADR-009, ADR-011).
+      # Cliente, segredo, cookie e papéis de cada front ficam nos perfis de src/Banking.Bff/Properties/launchSettings.json.
+      Bff__Authority: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}/realms/banking
+      Bff__MetadataAddress: http://keycloak:8080/realms/banking/.well-known/openid-configuration
+      Bff__RequireHttpsMetadata: "false"
+      Bff__ApiBaseUrl: http://localhost:5080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     depends_on:
       postgres:
         condition: service_healthy
       keycloak:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   postgres:
     # Mesma imagem de tests/Banking.IntegrationTests/PostgresFixture.cs.
     image: postgres:18.6-alpine
+    command: ["postgres", "-c", "max_connections=200"]
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev-only}
       BANKING_MIGRATOR_PASSWORD: ${BANKING_MIGRATOR_PASSWORD:-migrator-dev-only}
@@ -41,8 +56,29 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-only}
       KC_HEALTH_ENABLED: "true"
+      # Emissor fixo no endereço que o navegador vê; quem chama pelo endereço interno (API, BFF) recebe URLs internas.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+
+  rabbitmq:
+    image: rabbitmq:4.3.6-management-alpine
+    environment:
+      # Usuário próprio: o guest/guest padrão fica sem uso.
+      RABBITMQ_DEFAULT_USER: banking
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbit-dev-only}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.5.2
+    environment:
+      # Sem login só porque a porta fica privada no Codespaces. Nunca exponha este serviço.
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
 
 volumes:
   pgdata:

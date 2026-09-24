@@ -1,0 +1,55 @@
+name: stress
+
+# Roda uma categoria de testes de integração várias vezes seguidas para expor instabilidade.
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: Valor do trait Category (Concurrency, Messaging, ...)
+        required: true
+        default: Concurrency
+      iterations:
+        description: Quantas execuções seguidas
+        required: true
+        default: "50"
+  schedule:
+    - cron: "0 5 * * 0"
+  push:
+    branches: ["stress/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - category: ${{ inputs.category || 'Concurrency' }}
+            iterations: ${{ inputs.iterations || '50' }}
+          - category: Messaging
+            iterations: "20"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet build tests/Banking.IntegrationTests --configuration Release
+      - name: Execuções seguidas
+        env:
+          CATEGORY: ${{ matrix.category }}
+          ITERATIONS: ${{ matrix.iterations }}
+        run: |
+          for i in $(seq 1 "$ITERATIONS"); do
+            echo "::group::$CATEGORY, execução $i de $ITERATIONS"
+            if ! dotnet test --project tests/Banking.IntegrationTests --no-build --configuration Release --filter-trait "Category=$CATEGORY"; then
+              echo "::endgroup::"
+              echo "::error::$CATEGORY falhou na execução $i de $ITERATIONS"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
+          echo "$CATEGORY: $ITERATIONS execuções sem falha" >> "$GITHUB_STEP_SUMMARY"

@@ -3,6 +3,7 @@ using Banking.Application.Customers;
 using Banking.Application.Deposits;
 using Banking.Application.Idempotency;
 using Banking.Application.LedgerQueries;
+using Banking.Application.Notifications;
 using Banking.Application.Transfers;
 using Banking.Domain.Common;
 using Banking.Domain.Payments;
@@ -48,6 +49,7 @@ internal static class ApplicationSetup
         services.AddScoped<CreateTransferHandler>();
         services.AddScoped<GetTransferHandler>();
         services.AddScoped<GetLedgerTransactionHandler>();
+        services.AddScoped<NotificationQueriesHandler>();
 
         return services;
     }

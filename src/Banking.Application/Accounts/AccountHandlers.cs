@@ -1,5 +1,6 @@
 using Banking.Application.Abstractions;
 using Banking.Application.Common;
+using Banking.Contracts.Events;
 using Banking.Domain.Accounts;
 using Banking.Domain.Common;
 
@@ -52,7 +53,7 @@ public sealed class AccountAccess(IAccountRepository accounts, ICustomerReposito
 public sealed record OpenAccountCommand(Actor Actor, string? Currency);
 
 public sealed class OpenAccountHandler(
-    ICustomerRepository customers, IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, TimeProvider time)
+    ICustomerRepository customers, IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, IOutbox outbox, TimeProvider time)
 {
     public async Task<Result<AccountView>> HandleAsync(OpenAccountCommand command, CancellationToken cancellationToken)
     {
@@ -71,6 +72,7 @@ public sealed class OpenAccountHandler(
         var (account, ledgerAccount) = Account.Open(customer, number, currency, time.GetUtcNow());
         accounts.Add(account);
         ledger.Add(ledgerAccount);
+        outbox.Enqueue(new AccountOpenedV1(account.Id, account.CustomerId, account.CurrencyCode), account.CreatedAt);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AccountView.From(account);
@@ -137,7 +139,8 @@ public sealed class AccountQueriesHandler(
     }
 }
 
-public sealed class AccountStatusHandler(IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork)
+public sealed class AccountStatusHandler(
+    IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, IOutbox outbox, TimeProvider time)
 {
     public Task<Result<AccountView>> BlockAsync(Actor actor, Guid accountId, CancellationToken cancellationToken) =>
         ChangeAsync(actor, accountId, a => a.Block(), cancellationToken);
@@ -173,6 +176,7 @@ public sealed class AccountStatusHandler(IAccountRepository accounts, ILedger le
             return Error.Conflict(error.Code, error.Message);
         }
 
+        outbox.Enqueue(new AccountStatusChangedV1(account.Id, Codes.Of(account.Status)), time.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return AccountView.From(account);

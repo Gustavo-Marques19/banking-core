@@ -35,5 +35,8 @@ public readonly record struct Result<T>
 
     public static implicit operator Result<T>(T value) => new(value, null);
 
+    /// <summary>Para quando o valor é interface ou coleção e a conversão implícita não se aplica.</summary>
+    public static Result<T> From(T value) => new(value, null);
+
     public static implicit operator Result<T>(Error error) => new(default, error);
 }

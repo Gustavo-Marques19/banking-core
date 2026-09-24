@@ -2,6 +2,7 @@ using Banking.Application.Abstractions;
 using Banking.Application.Accounts;
 using Banking.Application.Common;
 using Banking.Application.Idempotency;
+using Banking.Contracts.Events;
 using Banking.Domain.Common;
 using Banking.Domain.Payments;
 
@@ -48,6 +49,7 @@ public sealed class CreateTransferHandler(
     ITransferRepository transfers,
     ILedger ledger,
     ILimitUsageStore limitUsage,
+    IOutbox outbox,
     TransferLimits limits,
     TimeProvider time)
 {
@@ -127,6 +129,17 @@ public sealed class CreateTransferHandler(
                 {
                     ledger.Add(posting);
                     await limitUsage.AddUsageAsync(LimitKind.TransferPerAccount, source.Id.ToString(), today, amount, ct);
+                    outbox.Enqueue(
+                        new TransferCompletedV1(
+                            transfer.Id, source.Id, destination.Id, amount.ToDecimalString(), amount.Currency.Code, posting.Id),
+                        now);
+                }
+                else
+                {
+                    outbox.Enqueue(
+                        new TransferRejectedV1(
+                            transfer.Id, source.Id, amount.ToDecimalString(), amount.Currency.Code, Codes.Of(transfer.RejectionReason)!),
+                        now);
                 }
             }
             catch (DomainException error)

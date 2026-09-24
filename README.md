@@ -82,6 +82,7 @@ Um roteiro para testar:
 | Revisão manual | Depois de um `TIMEOUT-`, no backoffice: `olga` registra o desfecho e `otto` aprova |
 | Aprovação de depósito | `./scripts/deposit.sh carla 15000` e aprove como `otto`; a `olga`, que pediu, não consegue |
 | Separação dos fronts | `olga` no app do cliente e `alice` no backoffice são barradas |
+| Auditoria de uma operação | Copie o código no comprovante da transferência, ou abrindo a linha no extrato, e cole em Auditoria no backoffice (`olga` ou `ada`) |
 
 Testes: `dotnet test` (backend), `npm test --workspaces --prefix web` (fronts) e `./scripts/e2e.sh` (E2E dos dois fronts no navegador).
 

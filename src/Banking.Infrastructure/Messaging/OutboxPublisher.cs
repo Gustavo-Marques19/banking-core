@@ -77,7 +77,7 @@ public sealed partial class OutboxPublisher(
                     nextCleanup = time.GetUtcNow().AddHours(1);
                 }
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 LogBatchFailed(error);
             }

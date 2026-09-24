@@ -136,7 +136,7 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
         {
             ["Messaging:Uri"] = _rabbit.GetConnectionString(),
             ["Messaging:PublishTimeout"] = "00:00:02",
-            ["Messaging:ConnectTimeout"] = "00:00:02",
+            ["Messaging:ConnectTimeout"] = "00:00:05",
             ["Outbox:Enabled"] = publisher.ToString(),
             ["Outbox:PollInterval"] = "00:00:00.200",
             ["Outbox:BaseRetryDelay"] = "00:00:00.500",

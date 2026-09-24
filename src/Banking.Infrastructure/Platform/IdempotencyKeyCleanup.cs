@@ -48,7 +48,7 @@ public sealed partial class IdempotencyKeyCleanup(IServiceScopeFactory scopes, I
                     LogDeleted(deleted);
                 }
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 LogFailed(error);
             }

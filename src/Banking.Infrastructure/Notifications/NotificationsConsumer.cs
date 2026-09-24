@@ -84,7 +84,7 @@ public sealed partial class NotificationsConsumer(
             {
                 await ConsumeUntilDisconnectedAsync(stoppingToken);
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 LogConnectionLost(error);
             }
@@ -95,8 +95,20 @@ public sealed partial class NotificationsConsumer(
 
     private async Task ConsumeUntilDisconnectedAsync(CancellationToken stoppingToken)
     {
-        await using var connection = await connections.ConnectAsync("banking-notifications-consumer", stoppingToken);
-        await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
+        var connection = await connections.ConnectAsync("banking-notifications-consumer", stoppingToken);
+        try
+        {
+            await ConsumeAsync(connection, stoppingToken);
+        }
+        finally
+        {
+            await RabbitMqConnectionProvider.AbortQuietlyAsync(connection);
+        }
+    }
+
+    private async Task ConsumeAsync(IConnection connection, CancellationToken stoppingToken)
+    {
+        var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
         await channel.QueueDeclareAsync(DeadLetterQueue, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
         await channel.QueueBindAsync(DeadLetterQueue, RabbitMqConnectionProvider.DeadLetterExchange, string.Empty, cancellationToken: stoppingToken);
@@ -153,7 +165,7 @@ public sealed partial class NotificationsConsumer(
 
             await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false, stoppingToken);
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (!stoppingToken.IsCancellationRequested)
         {
             LogProcessingFailed(envelope.EventId, error);
             await Task.Delay(TimeSpan.FromSeconds(1), time, stoppingToken);

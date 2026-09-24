@@ -74,24 +74,12 @@ internal sealed class RabbitMqPublisher(RabbitMqConnectionProvider connections, 
 
     private async Task ResetAsync()
     {
-        try
-        {
-            if (_channel is not null)
-            {
-                await _channel.DisposeAsync();
-            }
-
-            if (_connection is not null)
-            {
-                await _connection.DisposeAsync();
-            }
-        }
-        catch (Exception)
-        {
-            // Conexão já quebrada: descartar é o que importa, o erro de fechamento não.
-        }
-
+        var connection = _connection;
         _channel = null;
         _connection = null;
+        if (connection is not null)
+        {
+            await RabbitMqConnectionProvider.AbortQuietlyAsync(connection);
+        }
     }
 }

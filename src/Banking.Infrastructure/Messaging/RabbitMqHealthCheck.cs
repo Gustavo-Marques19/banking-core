@@ -14,7 +14,8 @@ internal sealed class RabbitMqHealthCheck(RabbitMqConnectionProvider connections
 
         try
         {
-            await using var connection = await connections.ConnectAsync("banking-health", cancellationToken);
+            var connection = await connections.ConnectAsync("banking-health", cancellationToken);
+            await RabbitMqConnectionProvider.AbortQuietlyAsync(connection);
             return HealthCheckResult.Healthy();
         }
         catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)

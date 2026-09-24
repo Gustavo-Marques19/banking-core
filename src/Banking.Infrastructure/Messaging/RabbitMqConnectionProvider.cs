@@ -26,9 +26,34 @@ public sealed class RabbitMqConnectionProvider(IOptions<MessagingOptions> option
         timeout.CancelAfter(Options.ConnectTimeout);
         var connection = await factory.CreateConnectionAsync(timeout.Token);
 
-        await using var channel = await connection.CreateChannelAsync(cancellationToken: timeout.Token);
-        await channel.ExchangeDeclareAsync(Options.Exchange, ExchangeType.Topic, durable: true, autoDelete: false, cancellationToken: timeout.Token);
-        await channel.ExchangeDeclareAsync(DeadLetterExchange, ExchangeType.Fanout, durable: true, autoDelete: false, cancellationToken: timeout.Token);
-        return connection;
+        try
+        {
+            var channel = await connection.CreateChannelAsync(cancellationToken: timeout.Token);
+            await channel.ExchangeDeclareAsync(Options.Exchange, ExchangeType.Topic, durable: true, autoDelete: false, cancellationToken: timeout.Token);
+            await channel.ExchangeDeclareAsync(DeadLetterExchange, ExchangeType.Fanout, durable: true, autoDelete: false, cancellationToken: timeout.Token);
+            await channel.CloseAsync(timeout.Token);
+            return connection;
+        }
+        catch
+        {
+            await AbortQuietlyAsync(connection);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Fecha sem esperar resposta do broker. Com o broker congelado, o fechamento normal esperaria dezenas de segundos.
+    /// </summary>
+    public static async Task AbortQuietlyAsync(IConnection connection)
+    {
+        try
+        {
+            await connection.AbortAsync(TimeSpan.FromSeconds(1));
+            await connection.DisposeAsync();
+        }
+        catch (Exception)
+        {
+            // A conexão já está sendo descartada; um erro no fechamento não muda nada.
+        }
     }
 }

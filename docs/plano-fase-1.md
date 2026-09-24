@@ -217,30 +217,30 @@ Depois do ambiente pronto:
 **Critério:** é impossível, mesmo via SQL cru com a role `app`, criar um ledger inconsistente.
 
 ### M3: Identidade, Customer, Account, Deposit (4 a 6 dias)
-- [ ] JWT/OIDC com Keycloak, com roles `customer`, `operator` e `admin`.
-- [ ] Customer com CPF validado, criptografado e com blind index. CPF mascarado nos logs.
-- [ ] Account com vínculo ao `LedgerAccount` e status (Active, Blocked, Closed).
-- [ ] Deposit: só `operator`, com Idempotency-Key, lançando `D Funding / C Cliente`, limite e motivo.
-- [ ] `GET /balance` com `ledgerBalance` e `availableBalance` (iguais na Fase 1, ver ADR-006).
-- [ ] Autorização por recurso em todos os GET. Testes de BOLA (A lê a conta de B → 404).
+- [x] JWT/OIDC com Keycloak, com roles `customer`, `operator` e `admin`.
+- [x] Customer com CPF validado, criptografado e com blind index. CPF mascarado nos logs.
+- [x] Account com vínculo ao `LedgerAccount` e status (Active, Blocked, Closed).
+- [x] Deposit: só `operator`, com Idempotency-Key, lançando `D Funding / C Cliente`, limite e motivo.
+- [x] `GET /balance` com `ledgerBalance` e `availableBalance` (iguais na Fase 1, ver ADR-006).
+- [x] Autorização por recurso em todos os GET. Testes de BOLA (A lê a conta de B → 404).
 
 **Critério:** um cliente só enxerga o que é dele, e só o operador cria dinheiro, sempre com contrapartida.
 
 ### M4: Transferência interna + idempotência + concorrência (5 a 8 dias)
 É o milestone mais importante do projeto.
-- [ ] `POST /transfers` (interna), com `currency` e `Idempotency-Key` obrigatórios.
-- [ ] Tabela de idempotência `UNIQUE(client_id, operation, key)`, gravada na mesma transação, e `RequestHash` sobre JSON canônico. Mesma chave com payload diferente → 409 (erro de conflito).
-- [ ] Lock `FOR UPDATE` ordenado, status e saldo checados dentro do lock, `lock_timeout` configurado.
-- [ ] Limites por transação e diário.
-- [ ] **Testes-demo** (integração, Postgres real):
-  - [ ] saldo 100, duas transferências de 80 simultâneas → 1 sucesso e 1 INSUFFICIENT_FUNDS;
-  - [ ] saldo 1.000, 100 transferências de 100 → exatamente 10 sucessos, saldo 0, trial balance = 0;
-  - [ ] 100 requisições com a **mesma** chave → 1 LedgerTransaction e 100 respostas idênticas;
-  - [ ] A→B e B→A em loop concorrente → nenhum deadlock;
-  - [ ] A tenta debitar a conta de B → 404 e nada escrito.
-- [ ] ADR-004 atualizada com latência e throughput medidos (k6 ou NBomber).
+- [x] `POST /transfers` (interna), com `currency` e `Idempotency-Key` obrigatórios.
+- [x] Tabela de idempotência `UNIQUE(client_id, operation, key)`, gravada na mesma transação, e `RequestHash` sobre JSON canônico. Mesma chave com payload diferente → 409 (erro de conflito).
+- [x] Lock `FOR UPDATE` ordenado, status e saldo checados dentro do lock, `lock_timeout` configurado.
+- [x] Limites por transação e diário.
+- [x] **Testes-demo** (integração, Postgres real):
+  - [x] saldo 100, duas transferências de 80 simultâneas → 1 sucesso e 1 INSUFFICIENT_FUNDS;
+  - [x] saldo 1.000, 100 transferências de 100 → exatamente 10 sucessos, saldo 0, trial balance = 0;
+  - [x] 100 requisições com a **mesma** chave → 1 LedgerTransaction e 100 respostas idênticas;
+  - [x] A→B e B→A em loop concorrente → nenhum deadlock;
+  - [x] A tenta debitar a conta de B → 404 e nada escrito.
+- [ ] ADR-004 atualizada com latência e throughput medidos (k6 ou NBomber). [M8, ferramenta de benchmark da demo]
 
-**Critério:** o cenário principal da spec (§27) roda com um comando e passa sempre (rodar 50× no CI para caçar flakiness).
+**Critério:** o cenário principal da spec (§27) roda com um comando e passa sempre (rodar 50× no CI para caçar flakiness). O workflow de estresse entra no M8.
 
 ### M5: Outbox, Inbox, RabbitMQ (4 a 6 dias)
 - [ ] RabbitMQ adicionado ao compose do devcontainer, com usuário e senha próprios (nada de `guest/guest`) e porta de management privada.

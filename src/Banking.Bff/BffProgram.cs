@@ -29,6 +29,13 @@ public static class BffProgram
             throw new InvalidOperationException("Bff:CookieName precisa do prefixo __Host- e Bff:AllowedRoles não pode ser vazio.");
         }
 
+        Uri? publicUrl = null;
+        if (!string.IsNullOrWhiteSpace(options.PublicUrl)
+            && (!Uri.TryCreate(options.PublicUrl, UriKind.Absolute, out publicUrl) || publicUrl.Scheme is not ("http" or "https")))
+        {
+            throw new InvalidOperationException($"Bff:PublicUrl precisa ser um endereço http ou https completo: '{options.PublicUrl}'.");
+        }
+
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddHttpClient("oidc");
         builder.Services.AddSingleton<TokenRefresher>();
@@ -66,6 +73,15 @@ public static class BffProgram
                 oidc.Scope.Add("openid");
                 oidc.TokenValidationParameters.NameClaimType = "preferred_username";
                 oidc.TokenValidationParameters.RoleClaimType = "roles";
+                if (publicUrl is not null)
+                {
+                    // O handler guarda este valor para a troca do código, então login e troca usam o mesmo endereço.
+                    oidc.Events.OnRedirectToIdentityProvider = context =>
+                    {
+                        context.ProtocolMessage.RedirectUri = new Uri(publicUrl, oidc.CallbackPath.Value).ToString();
+                        return Task.CompletedTask;
+                    };
+                }
             });
 
         builder.Services.AddAuthorizationBuilder()
@@ -145,7 +161,9 @@ public static class BffProgram
                 var oidc = services.GetRequiredService<Microsoft.Extensions.Options.IOptionsMonitor<OpenIdConnectOptions>>()
                     .Get(OpenIdConnectDefaults.AuthenticationScheme);
                 var configuration = await oidc.ConfigurationManager!.GetConfigurationAsync(http.RequestAborted);
-                var redirect = $"{http.Request.Scheme}://{http.Request.Host}/";
+                var redirect = publicUrl is not null
+                    ? new Uri(publicUrl, "/").ToString()
+                    : $"{http.Request.Scheme}://{http.Request.Host}/";
                 var logoutUrl = $"{configuration.EndSessionEndpoint}?client_id={Uri.EscapeDataString(oidc.ClientId!)}"
                     + $"&post_logout_redirect_uri={Uri.EscapeDataString(redirect)}"
                     + (idToken is null ? string.Empty : $"&id_token_hint={Uri.EscapeDataString(idToken)}");

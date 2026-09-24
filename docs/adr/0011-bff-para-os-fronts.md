@@ -25,6 +25,7 @@ Um backend-for-frontend (BFF) em ASP.NET Core (`src/Banking.Bff`). O código é 
 - **CSRF:** toda requisição que muda estado em `/api` ou `/bff` exige o header `X-CSRF: 1`. Outro site não consegue enviá-lo sem CORS, e o BFF não habilita CORS.
 - **Headers:** CSP sem `unsafe-inline`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`, HSTS fora de desenvolvimento. Só em desenvolvimento a CSP aceita script e estilo inline, que o Vite usa para o hot reload; o build de produção não tem nada inline, e os E2E rodam com a CSP estrita.
 - **Acesso:** só os papéis da instância entram; qualquer outro recebe 403 em tudo além do login. Sem sessão, `/api` e `/bff` respondem 401 (o front decide ir ao login); as outras rotas redirecionam para o login.
+- **Atrás de proxy:** no Codespaces, o TLS termina no encaminhamento de portas e o BFF vê `http` e o host interno. `Bff:PublicUrl` fixa o endereço que o navegador usa, e é ele que vai para os retornos de login e logout. O realm recebe esses endereços por variável de ambiente (placeholders), preenchidas por `scripts/devcontainer-init.sh`. Fixar por configuração, em vez de confiar em `X-Forwarded-Host`, evita que um cabeçalho vindo de fora decida para onde o Keycloak devolve o código.
 - **Logout:** `POST /bff/logout` (com CSRF) encerra a sessão local e devolve a URL de logout do Keycloak, com `id_token_hint`.
 
 ## Alternativas consideradas

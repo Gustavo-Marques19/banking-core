@@ -66,27 +66,26 @@ Sobe Postgres e RabbitMQ reais com Testcontainers, hospeda a API no processo e r
 
 ### No Codespaces
 
-1. Abra pelo botão acima. O ambiente sobe Postgres, Keycloak, RabbitMQ e o Aspire Dashboard, aplica as migrations e gera as chaves de desenvolvimento em user-secrets.
-2. `dotnet run --project src/Banking.Api` sobe a API na porta 5080.
-3. Token de desenvolvimento (usuários `alice`, `bruno`, `carla`, `olga`, `otto`, `ada`; senha `<usuario>-dev-only`):
+1. Abra pelo botão acima. O ambiente sobe Postgres, Keycloak, RabbitMQ e o Aspire Dashboard, aplica as migrations e gera as chaves de desenvolvimento em user-secrets. Leva alguns minutos na primeira vez.
+2. No terminal, `./scripts/dev.sh` sobe a API e os dois fronts e mostra os endereços:
+   - **App do cliente** (porta 5190): `alice`, `bruno` e `carla`. A `carla` ainda não tem cadastro e serve para ver a abertura de conta.
+   - **Backoffice** (porta 5180): `olga` e `otto` (operadores) e `ada` (admin).
+   - Senha de todo usuário: `<usuario>-dev-only`.
+3. `./scripts/deposit.sh carla 1000` põe dinheiro na conta, depositado pela operadora `olga`. Acima de R$ 10.000, o depósito espera outro operador aprovar no backoffice.
 
-   ```sh
-   curl -s -d grant_type=password -d client_id=banking-cli -d username=alice -d password=alice-dev-only \
-     http://keycloak:8080/realms/banking/protocol/openid-connect/token
-   ```
+Um roteiro para testar:
 
-4. Os fronts, cada um com o Vite e a sua instância do BFF (abra pelo endereço do BFF, não pelo do Vite):
+| O que testar | Como |
+|---|---|
+| Transferência interna | Veja o número da conta da `alice` no app dela e transfira para ele como `carla`, passando pela tela de resumo |
+| Transferência para outro banco | Banco `00000000`. O começo da conta escolhe o cenário do banco simulado: `SUCCESS-1` conclui, `FAIL-1` é recusada e o dinheiro volta, `TIMEOUT-1` vai para revisão manual |
+| Revisão manual | Depois de um `TIMEOUT-`, no backoffice: `olga` registra o desfecho e `otto` aprova |
+| Aprovação de depósito | `./scripts/deposit.sh carla 15000` e aprove como `otto`; a `olga`, que pediu, não consegue |
+| Separação dos fronts | `olga` no app do cliente e `alice` no backoffice são barradas |
 
-   ```sh
-   npm run dev --prefix web/backoffice &
-   dotnet run --project src/Banking.Bff --launch-profile backoffice   # http://localhost:5180 (olga, otto, ada)
-   npm run dev --prefix web/customer &
-   dotnet run --project src/Banking.Bff --launch-profile customer     # http://localhost:5190 (alice, bruno, carla)
-   ```
+Testes: `dotnet test` (backend), `npm test --workspaces --prefix web` (fronts) e `./scripts/e2e.sh` (E2E dos dois fronts no navegador).
 
-   `carla` ainda não tem cadastro: serve para ver a abertura de conta pelo app. Se o Keycloak do devcontainer foi criado antes do app do cliente, recrie o container dele para importar o cliente `banking-web`.
-
-5. `dotnet test` roda os testes do backend; `npm test --workspaces --prefix web`, os dos fronts; `./scripts/e2e.sh`, os E2E dos dois fronts contra a pilha completa.
+Para hot reload nos fronts, rode `npm run dev` em `web/backoffice` ou `web/customer` junto com `dotnet run --project src/Banking.Bff --launch-profile backoffice` (ou `customer`).
 
 Para não gastar a cota gratuita à toa, em [github.com/settings/codespaces](https://github.com/settings/codespaces) defina idle timeout de 30 minutos e retenção curta.
 

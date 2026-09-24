@@ -33,6 +33,14 @@ public sealed class BffOptions
 
     public bool RequireHttpsMetadata { get; set; } = true;
 
+    /// <summary>
+    /// Endereço pelo qual o navegador chega a esta instância, quando não é o da própria requisição: atrás de um proxy
+    /// que termina o TLS, como o encaminhamento de portas do Codespaces, o BFF vê http e o host interno. Vale para os
+    /// endereços de retorno do login e do logout, que o Keycloak confere contra a lista do cliente.
+    /// </summary>
+    /// <remarks>Texto, e vazio conta como ausente: o devcontainer passa a variável vazia fora do Codespaces.</remarks>
+    public string? PublicUrl { get; set; }
+
     /// <summary>Em desenvolvimento, o BFF repassa o que não é /api nem /bff ao servidor do Vite.</summary>
     public string? SpaDevServerUrl { get; set; }
 }

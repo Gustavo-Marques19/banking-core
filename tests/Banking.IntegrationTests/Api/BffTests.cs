@@ -152,6 +152,27 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
     }
 
     [Fact]
+    public async Task Atras_de_proxy_login_e_logout_usam_o_endereco_publico_cadastrado_no_keycloak()
+    {
+        await using var bff = new BffFactory(keycloak.Authority, _api, BffInstance.Customer with { PublicUrl = KeycloakFixture.CustomerPublicUrl });
+        var browser = NewBrowser(bff);
+
+        var login = await browser.GetAsync("/bff/login?returnUrl=/", Ct);
+        using var keycloakBrowser = KeycloakFixture.NewBrowser();
+        var callback = await KeycloakFixture.SubmitLoginFormAsync(keycloakBrowser, login.Headers.Location!, "alice");
+        var completed = await browser.GetAsync(callback.PathAndQuery, Ct);
+        var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/bff/logout");
+        logoutRequest.Headers.Add("X-CSRF", "1");
+        var logout = await browser.SendAsync(logoutRequest, Ct);
+        var logoutUrl = JsonDocument.Parse(await logout.Content.ReadAsStringAsync(Ct)).RootElement.GetProperty("logoutUrl").GetString()!;
+
+        // O Keycloak aceitou o endereço público (veio do placeholder do realm) e mandou o navegador de volta para ele.
+        Assert.Equal(new Uri(KeycloakFixture.CustomerPublicUrl).Host, callback.Host);
+        Assert.Equal(HttpStatusCode.Found, completed.StatusCode);
+        Assert.Contains(Uri.EscapeDataString($"{KeycloakFixture.CustomerPublicUrl}/"), logoutUrl, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Cookie_sem_prefixo_host_impede_o_bff_de_subir()
     {
         using var factory = new BffFactory("http://keycloak.invalid/realms/banking", _api, BffInstance.Customer with { CookieName = "banking" });
@@ -185,7 +206,7 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
     }
 
     /// <summary>As duas instâncias do mesmo BFF, como em src/Banking.Bff/Properties/launchSettings.json.</summary>
-    private sealed record BffInstance(string ClientId, string ClientSecret, string AllowedRoles, string CookieName)
+    private sealed record BffInstance(string ClientId, string ClientSecret, string AllowedRoles, string CookieName, string? PublicUrl = null)
     {
         public static readonly BffInstance Backoffice = new("banking-backoffice", "backoffice-dev-only", "operator,admin", "__Host-backoffice");
         public static readonly BffInstance Customer = new("banking-web", "web-dev-only", "customer", "__Host-banking");
@@ -201,6 +222,11 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
             builder.UseSetting("Bff:ClientSecret", instance.ClientSecret);
             builder.UseSetting("Bff:AllowedRoles", instance.AllowedRoles);
             builder.UseSetting("Bff:CookieName", instance.CookieName);
+            if (instance.PublicUrl is not null)
+            {
+                builder.UseSetting("Bff:PublicUrl", instance.PublicUrl);
+            }
+
             builder.UseSetting("Bff:RequireHttpsMetadata", "false");
             builder.UseSetting("Bff:ApiBaseUrl", "http://api.internal");
 

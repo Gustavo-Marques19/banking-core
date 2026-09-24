@@ -14,6 +14,14 @@ internal sealed class DepositRepository(BankingDbContext db) : IDepositRepositor
         db.Set<Deposit>().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
 }
 
+internal sealed class TransferRepository(BankingDbContext db) : ITransferRepository
+{
+    public void Add(InternalTransfer transfer) => db.Add(transfer);
+
+    public Task<InternalTransfer?> FindAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Set<InternalTransfer>().AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+}
+
 internal sealed class LimitUsageStore(BankingDbContext db) : ILimitUsageStore
 {
     public Task<Money> LockUsageAsync(

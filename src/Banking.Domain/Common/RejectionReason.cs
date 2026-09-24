@@ -10,5 +10,8 @@ public enum RejectionReason
     DailyLimitExceeded,
     CurrencyMismatch,
     SameAccount,
+
+    /// <summary>Destino bloqueado ou encerrado. Não diz qual dos dois: a conta é de outra pessoa.</summary>
+    DestinationUnavailable,
     SelfApprovalNotAllowed,
 }

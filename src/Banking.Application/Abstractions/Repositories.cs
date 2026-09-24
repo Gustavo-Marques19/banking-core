@@ -36,6 +36,13 @@ public interface IDepositRepository
     Task<Deposit?> FindAsync(Guid id, CancellationToken cancellationToken);
 }
 
+public interface ITransferRepository
+{
+    void Add(InternalTransfer transfer);
+
+    Task<InternalTransfer?> FindAsync(Guid id, CancellationToken cancellationToken);
+}
+
 public enum LimitKind
 {
     DepositPerOperator,

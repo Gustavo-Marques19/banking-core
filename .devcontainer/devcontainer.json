@@ -12,8 +12,9 @@
     "cpus": 2,
     "memory": "8gb"
   },
-  "forwardPorts": [5080, "keycloak:8080", "postgres:5432", "rabbitmq:15672", "aspire-dashboard:18888"],
+  "forwardPorts": [5180, 5080, "keycloak:8080", "postgres:5432", "rabbitmq:15672", "aspire-dashboard:18888"],
   "portsAttributes": {
+    "5180": { "label": "Backoffice (BFF)", "onAutoForward": "notify" },
     "5080": { "label": "Banking API", "onAutoForward": "notify" },
     "keycloak:8080": { "label": "Keycloak", "onAutoForward": "silent" },
     "postgres:5432": { "label": "Postgres", "onAutoForward": "silent" },

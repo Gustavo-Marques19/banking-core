@@ -22,6 +22,120 @@ namespace Banking.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("account_number_seq", "accounts");
+
+            modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Branch")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("branch");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid>("LedgerAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ledger_account_id");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accounts");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_accounts_customer_id");
+
+                    b.HasIndex("LedgerAccountId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accounts_ledger_account_id");
+
+                    b.HasIndex("Number")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accounts_number");
+
+                    b.ToTable("accounts", "accounts");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Accounts.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("DocumentBlindIndex")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("document_blind_index");
+
+                    b.Property<byte[]>("DocumentCiphertext")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("document_ciphertext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subject");
+
+                    b.HasKey("Id")
+                        .HasName("pk_customers");
+
+                    b.HasIndex("DocumentBlindIndex")
+                        .IsUnique()
+                        .HasDatabaseName("ix_customers_document_blind_index");
+
+                    b.HasIndex("Subject")
+                        .IsUnique()
+                        .HasDatabaseName("ix_customers_subject");
+
+                    b.ToTable("customers", "accounts");
+                });
+
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -215,6 +329,79 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.ToTable("ledger_transactions", "ledger");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Payments.Deposit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_minor");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<Guid?>("LedgerTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ledger_transaction_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<string>("RequestedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("requested_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_deposits");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_deposits_account_id");
+
+                    b.HasIndex("RequestedBy", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_deposits_requested_by_idempotency_key");
+
+                    b.ToTable("deposits", "payments", t =>
+                        {
+                            t.HasCheckConstraint("ck_deposits_amount_positive", "amount_minor > 0");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Infrastructure.Persistence.Configurations.AccountBalanceRecord", b =>
                 {
                     b.Property<Guid>("LedgerAccountId")
@@ -260,6 +447,88 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Infrastructure.Persistence.Configurations.IdempotencyKeyRecord", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("Operation")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("operation");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<byte[]>("RequestHash")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result");
+
+                    b.HasKey("ClientId", "Operation", "Key")
+                        .HasName("pk_idempotency_keys");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_idempotency_keys_expires_at");
+
+                    b.ToTable("idempotency_keys", "platform");
+                });
+
+            modelBuilder.Entity("Banking.Infrastructure.Persistence.Configurations.LimitUsageRecord", b =>
+                {
+                    b.Property<string>("LimitKind")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("limit_kind");
+
+                    b.Property<string>("Subject")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subject");
+
+                    b.Property<DateOnly>("UsageDate")
+                        .HasColumnType("date")
+                        .HasColumnName("usage_date");
+
+                    b.Property<long>("UsedMinor")
+                        .HasColumnType("bigint")
+                        .HasColumnName("used_minor");
+
+                    b.HasKey("LimitKind", "Subject", "UsageDate")
+                        .HasName("pk_limit_usage");
+
+                    b.ToTable("limit_usage", "payments", t =>
+                        {
+                            t.HasCheckConstraint("ck_limit_usage_non_negative", "used_minor >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_accounts_customer_customer_id");
+                });
+
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerEntry", b =>
                 {
                     b.HasOne("Banking.Domain.Ledger.LedgerTransaction", null)
@@ -285,6 +554,16 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .HasForeignKey("Banking.Domain.Ledger.LedgerTransaction", "ReversesTransactionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_ledger_transactions_ledger_transactions_reverses_transactio");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Payments.Deposit", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_deposits_accounts_account_id");
                 });
 
             modelBuilder.Entity("Banking.Infrastructure.Persistence.Configurations.AccountBalanceRecord", b =>

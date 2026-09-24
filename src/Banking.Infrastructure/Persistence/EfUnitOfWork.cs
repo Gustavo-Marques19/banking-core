@@ -22,7 +22,8 @@ internal sealed class EfUnitOfWork(BankingDbContext db, IOptions<DatabaseOptions
         return new EfUnitOfWorkTransaction(transaction);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
+        PostgresErrors.TranslateAsync(() => db.SaveChangesAsync(cancellationToken));
 
     private static string Milliseconds(TimeSpan value) =>
         ((long)value.TotalMilliseconds).ToString(CultureInfo.InvariantCulture) + "ms";

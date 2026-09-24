@@ -1,3 +1,5 @@
+using Banking.Application.Abstractions;
+using Banking.Infrastructure.Ledger;
 using Banking.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +13,9 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.AddDbContext<BankingDbContext>(options =>
             BankingDbContextOptions.Configure(options, connectionString));
+
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<ILedger, LedgerRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<BankingDbContext>("postgres", tags: [ReadinessTag]);

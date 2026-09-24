@@ -17,12 +17,13 @@ public sealed class ProjectReferenceTests
         Assert.Empty(project.PackageReferences);
     }
 
+    /// <summary>Contracts entra porque os eventos publicados são contrato público, e Contracts não depende de nada.</summary>
     [Fact]
-    public void Application_so_referencia_o_Domain()
+    public void Application_so_referencia_Domain_e_Contracts()
     {
         var project = Load("Banking.Application");
 
-        Assert.Equal(["Banking.Domain"], project.ProjectReferences);
+        Assert.Equal(["Banking.Contracts", "Banking.Domain"], project.ProjectReferences);
         Assert.Empty(project.PackageReferences);
     }
 

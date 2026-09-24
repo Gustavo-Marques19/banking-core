@@ -1,6 +1,7 @@
 using Banking.Api.Composition;
 using Banking.Api.Http;
 using Banking.Application.Accounts;
+using Banking.Application.Notifications;
 using Banking.Contracts.Requests;
 
 namespace Banking.Api.Endpoints;
@@ -30,6 +31,9 @@ internal static class AccountsEndpoints
         accounts.MapGet("/{id:guid}/transactions", async (
                 Guid id, long? before, int? limit, HttpContext http, AccountQueriesHandler handler, CancellationToken ct) =>
             ApiResults.From(await handler.GetStatementAsync(http.User.ToActor(), id, before, limit, ct), Results.Ok));
+
+        accounts.MapGet("/{id:guid}/notifications", async (Guid id, HttpContext http, NotificationQueriesHandler handler, CancellationToken ct) =>
+            ApiResults.From(await handler.ListAsync(http.User.ToActor(), id, ct), Results.Ok));
 
         accounts.MapPost("/{id:guid}/block", async (Guid id, HttpContext http, AccountStatusHandler handler, CancellationToken ct) =>
                 ApiResults.From(await handler.BlockAsync(http.User.ToActor(), id, ct), Results.Ok))

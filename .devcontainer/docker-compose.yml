@@ -13,11 +13,14 @@ services:
       # Tokens são pedidos e validados pelo mesmo endereço interno, então o issuer bate.
       Auth__Authority: http://keycloak:8080/realms/banking
       Auth__RequireHttpsMetadata: "false"
+      Messaging__Uri: amqp://banking:${RABBITMQ_PASSWORD:-rabbit-dev-only}@rabbitmq:5672/
     depends_on:
       postgres:
         condition: service_healthy
       keycloak:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   postgres:
     # Mesma imagem de tests/Banking.IntegrationTests/PostgresFixture.cs.
@@ -47,6 +50,18 @@ services:
       KC_HEALTH_ENABLED: "true"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+
+  rabbitmq:
+    image: rabbitmq:4.3.6-management-alpine
+    environment:
+      # Usuário próprio: o guest/guest padrão fica sem uso.
+      RABBITMQ_DEFAULT_USER: banking
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbit-dev-only}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
 volumes:
   pgdata:

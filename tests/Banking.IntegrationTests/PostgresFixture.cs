@@ -56,9 +56,47 @@ public sealed class PostgresFixture : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
+        await MigrateAsync(MigratorConnectionString);
+    }
 
+    /// <summary>
+    /// Banco novo no mesmo servidor, com as mesmas roles e migrations. Para testes com workers (outbox, provider),
+    /// que processam tudo o que encontram no banco.
+    /// </summary>
+    public async Task<IsolatedDatabase> CreateIsolatedDatabaseAsync()
+    {
+        var name = "banking_" + Guid.NewGuid().ToString("N")[..12];
+        await using (var server = new NpgsqlConnection(_container.GetConnectionString()))
+        {
+            await server.OpenAsync();
+            await using var create = new NpgsqlCommand($"CREATE DATABASE {name} OWNER {DatabaseRoles.Migrator}", server);
+            await create.ExecuteNonQueryAsync();
+        }
+
+        await using (var database = new NpgsqlConnection(new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name }.ConnectionString))
+        {
+            await database.OpenAsync();
+            await using var grants = new NpgsqlCommand(
+                $"""
+                REVOKE ALL ON DATABASE {name} FROM PUBLIC;
+                GRANT CONNECT ON DATABASE {name} TO {DatabaseRoles.App};
+                REVOKE ALL ON SCHEMA public FROM PUBLIC;
+                """,
+                database);
+            await grants.ExecuteNonQueryAsync();
+        }
+
+        var isolated = new IsolatedDatabase(
+            ConnectionStringFor(DatabaseRoles.App, _appPassword, name),
+            ConnectionStringFor(DatabaseRoles.Migrator, _migratorPassword, name));
+        await MigrateAsync(isolated.MigratorConnectionString);
+        return isolated;
+    }
+
+    private static async Task MigrateAsync(string migratorConnectionString)
+    {
         var options = new DbContextOptionsBuilder<BankingDbContext>();
-        BankingDbContextOptions.Configure(options, MigratorConnectionString);
+        BankingDbContextOptions.Configure(options, migratorConnectionString);
         await using var db = new BankingDbContext(options.Options);
         await db.Database.MigrateAsync();
     }
@@ -73,11 +111,13 @@ public sealed class PostgresFixture : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    private string ConnectionStringFor(string username, string password) =>
+    private string ConnectionStringFor(string username, string password, string database = "banking") =>
         new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
         {
-            Database = "banking",
+            Database = database,
             Username = username,
             Password = password,
         }.ConnectionString;
 }
+
+public sealed record IsolatedDatabase(string AppConnectionString, string MigratorConnectionString);

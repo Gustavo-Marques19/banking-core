@@ -4,6 +4,7 @@ using Banking.Api.Http;
 using Banking.Contracts;
 using Banking.Domain.Accounts;
 using Banking.Infrastructure;
+using Banking.Infrastructure.Messaging;
 using Banking.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
@@ -19,6 +20,9 @@ builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options => ContractJson.Apply(options.SerializerOptions));
 
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
+builder.Services.Configure<MessagingOptions>(builder.Configuration.GetSection(MessagingOptions.SectionName));
+builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.Configure<ConsumerOptions>(builder.Configuration.GetSection(ConsumerOptions.SectionName));
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddBankingApplication(builder.Configuration);
 builder.Services.AddBankingAuthentication(builder.Configuration);

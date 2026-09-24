@@ -7,4 +7,5 @@ public static class DatabaseSchemas
     public const string Ledger = "ledger";
     public const string Payments = "payments";
     public const string Platform = "platform";
+    public const string Notifications = "notifications";
 }

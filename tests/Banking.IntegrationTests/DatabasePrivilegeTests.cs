@@ -15,6 +15,7 @@ public sealed class DatabasePrivilegeTests(PostgresFixture postgres)
         DatabaseSchemas.Ledger,
         DatabaseSchemas.Payments,
         DatabaseSchemas.Platform,
+        DatabaseSchemas.Notifications,
         "public",
     ];
 

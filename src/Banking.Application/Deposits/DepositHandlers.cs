@@ -1,6 +1,7 @@
 using Banking.Application.Abstractions;
 using Banking.Application.Common;
 using Banking.Application.Idempotency;
+using Banking.Contracts.Events;
 using Banking.Domain.Common;
 using Banking.Domain.Payments;
 
@@ -38,6 +39,7 @@ public sealed class MakeDepositHandler(
     IDepositRepository deposits,
     ILedger ledger,
     ILimitUsageStore limitUsage,
+    IOutbox outbox,
     DepositLimits limits,
     TimeProvider time)
 {
@@ -98,6 +100,8 @@ public sealed class MakeDepositHandler(
                 {
                     ledger.Add(posting);
                     await limitUsage.AddUsageAsync(LimitKind.DepositPerOperator, command.Actor.Subject, today, amount, ct);
+                    outbox.Enqueue(
+                        new MoneyDepositedV1(deposit.Id, account.Id, amount.ToDecimalString(), amount.Currency.Code, posting.Id), now);
                 }
             }
             catch (DomainException error)

@@ -189,9 +189,15 @@ test("o navegador não guarda token: só o cookie de sessão HttpOnly", async ({
   const cookies = await context.cookies(app);
   const storage = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
 
-  expect(cookies.map((c) => c.name)).toEqual(["__Host-banking"]);
-  expect(cookies[0]!.httpOnly).toBe(true);
-  expect(cookies[0]!.value).not.toContain("eyJ");
+  // A sessão é um cookie só, que o ASP.NET divide em partes (__Host-bankingC1, C2...) quando passa do tamanho (ADR-011).
+  expect(cookies.length).toBeGreaterThan(0);
+  for (const cookie of cookies) {
+    expect(cookie.name).toMatch(/^__Host-banking(C\d+)?$/);
+    expect(cookie.httpOnly).toBe(true);
+    expect(cookie.sameSite).toBe("Strict");
+    expect(cookie.value).not.toContain("eyJ");
+  }
+  expect(await page.evaluate(() => document.cookie)).toBe("");
   expect(storage).not.toContain("eyJ");
 });
 

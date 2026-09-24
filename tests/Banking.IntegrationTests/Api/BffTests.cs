@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using Banking.Backoffice.Bff;
+using Banking.Bff;
 using Banking.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,12 +13,13 @@ namespace Banking.IntegrationTests.Api;
 
 /// <summary>
 /// Login real no Keycloak, BFF e API no processo (ADR-011). Prova que o navegador só recebe cookie, que CSRF é barrado
-/// e que só operador e admin entram.
+/// e que cada instância só deixa entrar os próprios papéis: operador e admin no backoffice, cliente no app.
 /// </summary>
 public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak) : IClassFixture<KeycloakFixture>, IAsyncLifetime
 {
     private ApiFactory _api = null!;
     private BffFactory _bff = null!;
+    private BffFactory _customerBff = null!;
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -29,13 +30,15 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
             ["Auth:Authority"] = keycloak.Authority,
             ["Auth:RequireHttpsMetadata"] = "false",
         });
-        _bff = new BffFactory(keycloak.Authority, _api);
+        _bff = new BffFactory(keycloak.Authority, _api, BffInstance.Backoffice);
+        _customerBff = new BffFactory(keycloak.Authority, _api, BffInstance.Customer);
         return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
     {
         await _bff.DisposeAsync();
+        await _customerBff.DisposeAsync();
         await _api.DisposeAsync();
     }
 
@@ -126,7 +129,39 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.GetAsync("/bff/user", Ct)).StatusCode);
     }
 
-    private HttpClient NewBrowser() => _bff.CreateClient(new WebApplicationFactoryClientOptions
+    [Fact]
+    public async Task App_do_cliente_deixa_entrar_cliente_com_o_proprio_cookie()
+    {
+        var (browser, cookieHeaders) = await LoginAsync("alice", _customerBff);
+
+        var accounts = await browser.GetAsync("/api/v1/accounts", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, accounts.StatusCode);
+        var session = Assert.Single(cookieHeaders, h => h.StartsWith("__Host-banking=", StringComparison.Ordinal));
+        Assert.Contains("samesite=strict", session, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(cookieHeaders, h => h.StartsWith("__Host-backoffice=", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Operador_nao_entra_no_app_do_cliente()
+    {
+        var (browser, _) = await LoginAsync("olga", _customerBff);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await browser.GetAsync("/bff/user", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await browser.GetAsync("/api/v1/accounts", Ct)).StatusCode);
+    }
+
+    [Fact]
+    public void Cookie_sem_prefixo_host_impede_o_bff_de_subir()
+    {
+        using var factory = new BffFactory("http://keycloak.invalid/realms/banking", _api, BffInstance.Customer with { CookieName = "banking" });
+
+        var error = Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
+
+        Assert.Contains("__Host-", error.Message, StringComparison.Ordinal);
+    }
+
+    private HttpClient NewBrowser(BffFactory? bff = null) => (bff ?? _bff).CreateClient(new WebApplicationFactoryClientOptions
     {
         BaseAddress = new Uri("https://localhost"),
         AllowAutoRedirect = false,
@@ -134,9 +169,9 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
     });
 
     /// <summary>Fluxo de navegador: BFF → Keycloak (formulário) → callback do BFF. Devolve os Set-Cookie do callback.</summary>
-    private async Task<(HttpClient Browser, IReadOnlyList<string> CallbackCookies)> LoginAsync(string username)
+    private async Task<(HttpClient Browser, IReadOnlyList<string> CallbackCookies)> LoginAsync(string username, BffFactory? bff = null)
     {
-        var browser = NewBrowser();
+        var browser = NewBrowser(bff);
         var login = await browser.GetAsync("/bff/login?returnUrl=/", Ct);
         Assert.Equal(HttpStatusCode.Found, login.StatusCode);
 
@@ -149,13 +184,23 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
         return (browser, completed.Headers.TryGetValues("Set-Cookie", out var cookies) ? [.. cookies] : []);
     }
 
-    private sealed class BffFactory(string authority, ApiFactory api) : WebApplicationFactory<BffOptions>
+    /// <summary>As duas instâncias do mesmo BFF, como em src/Banking.Bff/Properties/launchSettings.json.</summary>
+    private sealed record BffInstance(string ClientId, string ClientSecret, string AllowedRoles, string CookieName)
+    {
+        public static readonly BffInstance Backoffice = new("banking-backoffice", "backoffice-dev-only", "operator,admin", "__Host-backoffice");
+        public static readonly BffInstance Customer = new("banking-web", "web-dev-only", "customer", "__Host-banking");
+    }
+
+    private sealed class BffFactory(string authority, ApiFactory api, BffInstance instance) : WebApplicationFactory<BffOptions>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("Bff:Authority", authority);
-            builder.UseSetting("Bff:ClientSecret", "backoffice-dev-only");
+            builder.UseSetting("Bff:ClientId", instance.ClientId);
+            builder.UseSetting("Bff:ClientSecret", instance.ClientSecret);
+            builder.UseSetting("Bff:AllowedRoles", instance.AllowedRoles);
+            builder.UseSetting("Bff:CookieName", instance.CookieName);
             builder.UseSetting("Bff:RequireHttpsMetadata", "false");
             builder.UseSetting("Bff:ApiBaseUrl", "http://api.internal");
 

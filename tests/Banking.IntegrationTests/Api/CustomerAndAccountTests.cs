@@ -160,4 +160,55 @@ public sealed class CustomerAndAccountTests(PostgresFixture postgres)
         var asCustomer = await _bank.Client(user).PostAsync($"/api/v1/accounts/{account}/block", null, Ct);
         Assert.Equal(HttpStatusCode.Forbidden, asCustomer.StatusCode);
     }
+
+    [Fact]
+    public async Task Busca_por_agencia_e_numero_devolve_o_id_e_o_titular_mascarado()
+    {
+        var (owner, account) = await _bank.NewAccountAsync();
+        var number = (await TestBank.ReadAsync(await _bank.Client(owner).GetAsync($"/api/v1/accounts/{account}", Ct))).GetProperty("number").GetString()!;
+        var (someone, _) = await _bank.NewCustomerAsync();
+
+        var response = await _bank.Client(someone).GetAsync($"/api/v1/accounts/lookup?branch=0001&number={number.TrimStart('0')}", Ct);
+
+        await TestBank.EnsureStatusAsync(response, HttpStatusCode.OK);
+        var body = await TestBank.ReadAsync(response);
+        Assert.Equal(account, body.GetProperty("id").GetGuid());
+        Assert.Equal(number, body.GetProperty("number").GetString());
+        Assert.Equal("Cliente T.", body.GetProperty("holderName").GetString());
+        Assert.False(body.TryGetProperty("customerId", out _));
+        Assert.False(body.TryGetProperty("status", out _));
+    }
+
+    [Theory]
+    [InlineData("0001", "99999999", HttpStatusCode.NotFound)]
+    [InlineData("1", "12", HttpStatusCode.BadRequest)]
+    [InlineData("0001", "12a", HttpStatusCode.BadRequest)]
+    [InlineData("0001", "123456789", HttpStatusCode.BadRequest)]
+    public async Task Busca_invalida_ou_sem_resultado(string branch, string number, HttpStatusCode expected)
+    {
+        var (user, _) = await _bank.NewCustomerAsync();
+
+        var response = await _bank.Client(user).GetAsync($"/api/v1/accounts/lookup?branch={branch}&number={number}", Ct);
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Busca_de_conta_tem_limite_proprio_por_usuario()
+    {
+        await using var api = postgres.CreateApi(new Dictionary<string, string?> { ["RateLimiting:LookupsPerMinute"] = "2" });
+        var bank = new TestBank(api);
+        var (scanner, _) = await bank.NewCustomerAsync();
+        var (other, _) = await bank.NewCustomerAsync();
+
+        var statuses = new List<HttpStatusCode>();
+        for (var i = 1; i <= 3; i++)
+        {
+            statuses.Add((await bank.Client(scanner).GetAsync($"/api/v1/accounts/lookup?branch=0001&number=9999999{i}", Ct)).StatusCode);
+        }
+
+        Assert.Equal([HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.TooManyRequests], statuses);
+        Assert.Equal(HttpStatusCode.NotFound, (await bank.Client(other).GetAsync("/api/v1/accounts/lookup?branch=0001&number=99999991", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await bank.Client(scanner).GetAsync("/api/v1/accounts", Ct)).StatusCode);
+    }
 }

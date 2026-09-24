@@ -1,0 +1,5 @@
+{
+  "name": "banking-web",
+  "private": true,
+  "workspaces": ["shared", "backoffice", "customer"]
+}

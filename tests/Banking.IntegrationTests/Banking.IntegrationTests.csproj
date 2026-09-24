@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Banking.Api\Banking.Api.csproj" />
-    <ProjectReference Include="..\..\src\Banking.Backoffice.Bff\Banking.Backoffice.Bff.csproj" />
+    <ProjectReference Include="..\..\src\Banking.Bff\Banking.Bff.csproj" />
     <ProjectReference Include="..\..\src\Banking.Infrastructure\Banking.Infrastructure.csproj" />
   </ItemGroup>
 

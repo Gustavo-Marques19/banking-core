@@ -53,6 +53,7 @@ internal static class ApplicationSetup
         services.AddScoped<GetCustomerHandler>();
         services.AddScoped<OpenAccountHandler>();
         services.AddScoped<AccountQueriesHandler>();
+        services.AddScoped<AccountLookupHandler>();
         services.AddScoped<AccountStatusHandler>();
         services.AddScoped<MakeDepositHandler>();
         services.AddScoped<CreateTransferHandler>();

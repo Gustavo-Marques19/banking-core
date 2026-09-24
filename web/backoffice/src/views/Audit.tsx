@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router";
-import { api } from "../api/client";
+import { api } from "@banking/web-shared/client";
 import type { AuditLogView, AuditVerification } from "../api/types";
-import { Empty, ErrorState, Loading } from "../components/States";
-import { formatDateTime } from "../lib/money";
-import { useResource } from "../lib/useResource";
+import { Empty, ErrorState, Loading } from "@banking/web-shared/States";
+import { formatDateTime } from "@banking/web-shared/money";
+import { useResource } from "@banking/web-shared/useResource";
 import { useSession } from "../session";
 
 export function Audit() {

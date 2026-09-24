@@ -26,6 +26,8 @@ public interface IAccountRepository
 
     Task<IReadOnlyList<Account>> ListByCustomerAsync(Guid customerId, CancellationToken cancellationToken);
 
+    Task<Account?> FindByNumberAsync(string branch, string number, CancellationToken cancellationToken);
+
     Task<long> NextNumberAsync(CancellationToken cancellationToken);
 }
 

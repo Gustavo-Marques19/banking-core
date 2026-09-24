@@ -14,13 +14,12 @@ services:
       Auth__Authority: http://keycloak:8080/realms/banking
       Auth__RequireHttpsMetadata: "false"
       Messaging__Uri: amqp://banking:${RABBITMQ_PASSWORD:-rabbit-dev-only}@rabbitmq:5672/
-      # BFF do backoffice: emissor público, metadados pelo endereço interno (ADR-009, ADR-011).
+      # Comum às duas instâncias do BFF: emissor público, metadados pelo endereço interno (ADR-009, ADR-011).
+      # Cliente, segredo, cookie e papéis de cada front ficam nos perfis de src/Banking.Bff/Properties/launchSettings.json.
       Bff__Authority: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}/realms/banking
       Bff__MetadataAddress: http://keycloak:8080/realms/banking/.well-known/openid-configuration
-      Bff__ClientSecret: backoffice-dev-only
       Bff__RequireHttpsMetadata: "false"
       Bff__ApiBaseUrl: http://localhost:5080
-      Bff__SpaDevServerUrl: http://localhost:5173
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     depends_on:

@@ -132,4 +132,4 @@ Toda resposta traz `X-Trace-Id`. Com ele, ou com o id da operação:
 | `web/` | Workspace npm: `backoffice`, `customer` (app do cliente) e `shared`, cada front com o seu `DESIGN.md` |
 | `tests/` | Unitários (com testes de propriedade), arquitetura e integração com Testcontainers |
 | `tools/Banking.Demo` | `make demo` e `make bench` |
-| `docs/` | [Plano](docs/plano-fase-1.md), [ADRs](docs/adr/README.md), [lançamentos](docs/ledger/lancamentos.md), [estados](docs/estados.md), [threat model](docs/threat-model.md) |
+| `docs/` | [Plano](docs/plano-fase-1.md), [ADRs](docs/adr/README.md), [lançamentos](docs/ledger/lancamentos.md), [estados](docs/estados.md), [threat model](docs/threat-model.md), [roteiro de estudo](docs/estudo-guiado.md) |

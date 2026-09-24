@@ -1,5 +1,7 @@
 using Banking.Application.Abstractions;
+using System.Diagnostics;
 using Banking.Domain.Payments;
+using Banking.Infrastructure.Telemetry;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.CircuitBreaker;
@@ -56,12 +58,17 @@ internal sealed class ResilientBankingProvider : IBankingProvider
 
     public async Task<SubmitResult> SubmitTransferAsync(ProviderTransferRequest request, CancellationToken cancellationToken)
     {
+        var started = Stopwatch.GetTimestamp();
         try
         {
-            return await _submit.ExecuteAsync(ct => new ValueTask<SubmitResult>(_inner.SubmitTransferAsync(request, ct)), cancellationToken);
+            var result = await _submit.ExecuteAsync(ct => new ValueTask<SubmitResult>(_inner.SubmitTransferAsync(request, ct)), cancellationToken);
+            Record("submit", started, result.Outcome.ToString(), null);
+            return result;
         }
         catch (Exception error) when (IsUncertain(error, cancellationToken))
         {
+            Record("submit", started, "Unknown", error);
+
             // Não dá para saber se a ordem chegou: UNKNOWN, nunca FAILED (ADR-006).
             return new SubmitResult(SubmitOutcome.Unknown, Describe(error));
         }
@@ -69,12 +76,16 @@ internal sealed class ResilientBankingProvider : IBankingProvider
 
     public async Task<ProviderStatusResult> GetTransferStatusAsync(string clientReference, CancellationToken cancellationToken)
     {
+        var started = Stopwatch.GetTimestamp();
         try
         {
-            return await _query.ExecuteAsync(ct => new ValueTask<ProviderStatusResult>(_inner.GetTransferStatusAsync(clientReference, ct)), cancellationToken);
+            var result = await _query.ExecuteAsync(ct => new ValueTask<ProviderStatusResult>(_inner.GetTransferStatusAsync(clientReference, ct)), cancellationToken);
+            Record("status", started, result.Status.ToString(), null);
+            return result;
         }
         catch (Exception error) when (IsUncertain(error, cancellationToken))
         {
+            Record("status", started, "Unavailable", error);
             throw new ProviderUnavailableException($"Consulta de status falhou: {Describe(error)}", error);
         }
     }
@@ -88,6 +99,20 @@ internal sealed class ResilientBankingProvider : IBankingProvider
         catch (Exception error) when (IsUncertain(error, cancellationToken))
         {
             throw new ProviderUnavailableException($"Extrato indisponível: {Describe(error)}", error);
+        }
+    }
+
+    private static void Record(string operation, long started, string outcome, Exception? error)
+    {
+        var tags = new TagList { { "operation", operation }, { "outcome", outcome } };
+        InfrastructureMetrics.ProviderLatency.Record(Stopwatch.GetElapsedTime(started).TotalMilliseconds, tags);
+        if (error is TimeoutRejectedException)
+        {
+            InfrastructureMetrics.ProviderTimeout.Add(1, tags);
+        }
+        else if (error is not null)
+        {
+            InfrastructureMetrics.ProviderError.Add(1, new TagList { { "operation", operation }, { "error", Describe(error) } });
         }
     }
 

@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using Banking.Application.Common;
 using Banking.Infrastructure.Persistence;
+using Banking.Infrastructure.Telemetry;
 using Banking.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,10 +36,14 @@ public sealed partial class OutboxPublisher(
         var published = 0;
         foreach (var message in pending)
         {
+            // Continua o trace da requisição que gravou o evento (API → outbox → broker → consumidor).
+            ActivityContext.TryParse(message.TraceParent, null, out var parent);
+            using var activity = BankingTelemetry.Source.StartActivity($"outbox publish {message.Type}", ActivityKind.Producer, parent);
+            activity?.SetTag("messaging.message.id", message.Id);
             try
             {
                 await publisher.PublishAsync(
-                    new OutgoingMessage(message.Id, message.Type, message.Payload, message.TraceParent), cancellationToken);
+                    new OutgoingMessage(message.Id, message.Type, message.Payload, activity?.Id ?? message.TraceParent), cancellationToken);
                 await MarkPublishedAsync(db, message.Id, cancellationToken);
                 published++;
             }
@@ -135,6 +142,8 @@ public sealed partial class OutboxPublisher(
     {
         var attempts = message.Attempts + 1;
         var deadLettered = error is MessageRejectedException && attempts >= options.Value.MaxAttempts;
+        InfrastructureMetrics.OutboxRetry.Add(1, new KeyValuePair<string, object?>("dead_lettered", deadLettered));
+        Activity.Current?.SetStatus(ActivityStatusCode.Error, error.Message);
         LogPublishFailed(message.Id, message.Type, attempts, deadLettered, error);
 
         await using var command = DbCommands.InTransaction(

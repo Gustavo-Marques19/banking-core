@@ -1,4 +1,5 @@
 using Banking.Application.Accounts;
+using Banking.Application.Audit;
 using Banking.Application.Customers;
 using Banking.Application.Deposits;
 using Banking.Application.ExternalTransfers;
@@ -58,6 +59,7 @@ internal static class ApplicationSetup
         services.AddScoped<ExternalTransferProcessor>();
         services.AddScoped<ProviderWebhookHandler>();
         services.AddScoped<ReconciliationHandler>();
+        services.AddScoped<AuditHandler>();
         services.AddSingleton(new ExternalTransferSettings(
             configuration.GetValue("ExternalTransfers:CheckInterval", TimeSpan.FromSeconds(5)),
             configuration.GetValue("ExternalTransfers:MaxSubmitAttempts", 5)));

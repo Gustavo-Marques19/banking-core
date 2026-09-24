@@ -88,7 +88,8 @@ public sealed class PostgresFixture : IAsyncLifetime
 
         var isolated = new IsolatedDatabase(
             ConnectionStringFor(DatabaseRoles.App, _appPassword, name),
-            ConnectionStringFor(DatabaseRoles.Migrator, _migratorPassword, name));
+            ConnectionStringFor(DatabaseRoles.Migrator, _migratorPassword, name),
+            new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name }.ConnectionString);
         await MigrateAsync(isolated.MigratorConnectionString);
         return isolated;
     }
@@ -120,4 +121,4 @@ public sealed class PostgresFixture : IAsyncLifetime
         }.ConnectionString;
 }
 
-public sealed record IsolatedDatabase(string AppConnectionString, string MigratorConnectionString);
+public sealed record IsolatedDatabase(string AppConnectionString, string MigratorConnectionString, string SuperuserConnectionString);

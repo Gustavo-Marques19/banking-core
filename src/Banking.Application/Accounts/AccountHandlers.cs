@@ -1,4 +1,5 @@
 using Banking.Application.Abstractions;
+using Banking.Application.Audit;
 using Banking.Application.Common;
 using Banking.Contracts.Events;
 using Banking.Domain.Accounts;
@@ -53,7 +54,13 @@ public sealed class AccountAccess(IAccountRepository accounts, ICustomerReposito
 public sealed record OpenAccountCommand(Actor Actor, string? Currency);
 
 public sealed class OpenAccountHandler(
-    ICustomerRepository customers, IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, IOutbox outbox, TimeProvider time)
+    ICustomerRepository customers,
+    IAccountRepository accounts,
+    ILedger ledger,
+    IUnitOfWork unitOfWork,
+    IOutbox outbox,
+    IAuditTrail audit,
+    TimeProvider time)
 {
     public async Task<Result<AccountView>> HandleAsync(OpenAccountCommand command, CancellationToken cancellationToken)
     {
@@ -73,6 +80,7 @@ public sealed class OpenAccountHandler(
         accounts.Add(account);
         ledger.Add(ledgerAccount);
         outbox.Enqueue(new AccountOpenedV1(account.Id, account.CustomerId, account.CurrencyCode), account.CreatedAt);
+        audit.Record(AuditEntry.Of(command.Actor, "account.open", "account", account.Id, "completed", ("number", account.Number)));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AccountView.From(account);
@@ -140,16 +148,16 @@ public sealed class AccountQueriesHandler(
 }
 
 public sealed class AccountStatusHandler(
-    IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, IOutbox outbox, TimeProvider time)
+    IAccountRepository accounts, ILedger ledger, IUnitOfWork unitOfWork, IOutbox outbox, IAuditTrail audit, TimeProvider time)
 {
     public Task<Result<AccountView>> BlockAsync(Actor actor, Guid accountId, CancellationToken cancellationToken) =>
-        ChangeAsync(actor, accountId, a => a.Block(), cancellationToken);
+        ChangeAsync(actor, accountId, "account.block", a => a.Block(), cancellationToken);
 
     public Task<Result<AccountView>> UnblockAsync(Actor actor, Guid accountId, CancellationToken cancellationToken) =>
-        ChangeAsync(actor, accountId, a => a.Unblock(), cancellationToken);
+        ChangeAsync(actor, accountId, "account.unblock", a => a.Unblock(), cancellationToken);
 
     private async Task<Result<AccountView>> ChangeAsync(
-        Actor actor, Guid accountId, Action<Account> change, CancellationToken cancellationToken)
+        Actor actor, Guid accountId, string operation, Action<Account> change, CancellationToken cancellationToken)
     {
         if (!actor.IsOperator)
         {
@@ -177,6 +185,7 @@ public sealed class AccountStatusHandler(
         }
 
         outbox.Enqueue(new AccountStatusChangedV1(account.Id, Codes.Of(account.Status)), time.GetUtcNow());
+        audit.Record(AuditEntry.Of(actor, operation, "account", account.Id, Codes.Of(account.Status)));
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return AccountView.From(account);

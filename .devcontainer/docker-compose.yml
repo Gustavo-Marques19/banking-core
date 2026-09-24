@@ -14,6 +14,8 @@ services:
       Auth__Authority: http://keycloak:8080/realms/banking
       Auth__RequireHttpsMetadata: "false"
       Messaging__Uri: amqp://banking:${RABBITMQ_PASSWORD:-rabbit-dev-only}@rabbitmq:5672/
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,6 +64,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.5.2
+    environment:
+      # Sem login só porque a porta fica privada no Codespaces. Nunca exponha este serviço.
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
 
 volumes:
   pgdata:

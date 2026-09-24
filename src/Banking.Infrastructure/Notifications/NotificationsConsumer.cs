@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
+using Banking.Application.Common;
 using Banking.Application.Notifications;
 using Banking.Contracts.Events;
 using Banking.Infrastructure.Messaging;
@@ -155,6 +158,13 @@ public sealed partial class NotificationsConsumer(
             await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: false, stoppingToken);
             return;
         }
+
+        var traceParent = delivery.BasicProperties.Headers?.TryGetValue("traceparent", out var header) == true && header is byte[] bytes
+            ? Encoding.UTF8.GetString(bytes)
+            : null;
+        ActivityContext.TryParse(traceParent, null, out var parent);
+        using var activity = BankingTelemetry.Source.StartActivity($"consume {envelope.Type}.v{envelope.Version}", ActivityKind.Consumer, parent);
+        activity?.SetTag("messaging.message.id", envelope.EventId);
 
         try
         {

@@ -26,9 +26,13 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IAccountReadModel, AccountReadModel>();
         services.AddScoped<IDepositRepository, DepositRepository>();
+        services.AddScoped<ITransferRepository, TransferRepository>();
         services.AddScoped<ILimitUsageStore, LimitUsageStore>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         services.AddSingleton<IDocumentProtector>(sp => new AesGcmDocumentProtector(sp.GetRequiredService<PiiOptions>()));
+
+        services.AddSingleton<IdempotencyKeyCleanup>();
+        services.AddHostedService(sp => sp.GetRequiredService<IdempotencyKeyCleanup>());
 
         services.AddHealthChecks()
             .AddDbContextCheck<BankingDbContext>("postgres", tags: [ReadinessTag]);

@@ -2,6 +2,8 @@ using Banking.Application.Accounts;
 using Banking.Application.Customers;
 using Banking.Application.Deposits;
 using Banking.Application.Idempotency;
+using Banking.Application.LedgerQueries;
+using Banking.Application.Transfers;
 using Banking.Domain.Common;
 using Banking.Domain.Payments;
 using Banking.Infrastructure.Security;
@@ -15,6 +17,10 @@ public sealed class LimitsOptions
     public string DepositPerOperation { get; set; } = "50000.00";
 
     public string DepositDailyPerOperator { get; set; } = "200000.00";
+
+    public string TransferPerTransaction { get; set; } = "20000.00";
+
+    public string TransferDailyPerAccount { get; set; } = "50000.00";
 }
 
 internal static class ApplicationSetup
@@ -25,6 +31,9 @@ internal static class ApplicationSetup
         services.AddSingleton(new DepositLimits(
             Money.Parse(limits.DepositPerOperation, Currency.Brl),
             Money.Parse(limits.DepositDailyPerOperator, Currency.Brl)));
+        services.AddSingleton(new TransferLimits(
+            Money.Parse(limits.TransferPerTransaction, Currency.Brl),
+            Money.Parse(limits.TransferDailyPerAccount, Currency.Brl)));
 
         services.AddSingleton(configuration.GetSection(PiiOptions.SectionName).Get<PiiOptions>() ?? new PiiOptions());
 
@@ -36,6 +45,9 @@ internal static class ApplicationSetup
         services.AddScoped<AccountQueriesHandler>();
         services.AddScoped<AccountStatusHandler>();
         services.AddScoped<MakeDepositHandler>();
+        services.AddScoped<CreateTransferHandler>();
+        services.AddScoped<GetTransferHandler>();
+        services.AddScoped<GetLedgerTransactionHandler>();
 
         return services;
     }

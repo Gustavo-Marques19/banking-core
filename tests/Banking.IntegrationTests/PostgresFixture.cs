@@ -27,6 +27,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     public PostgresFixture()
     {
         _container = new PostgreSqlBuilder(Image)
+            .WithCommand("-c", "max_connections=400")
             .WithEnvironment("BANKING_MIGRATOR_PASSWORD", _migratorPassword)
             .WithEnvironment("BANKING_APP_PASSWORD", _appPassword)
             .WithResourceMapping(

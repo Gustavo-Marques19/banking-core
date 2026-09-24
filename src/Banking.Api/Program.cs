@@ -53,7 +53,8 @@ app.MapHealthChecks("/ready", new HealthCheckOptions
 app.MapGroup("/api/v1")
     .MapCustomers()
     .MapAccounts()
-    .MapDeposits();
+    .MapDeposits()
+    .MapTransfers();
 
 app.Run();
 

@@ -28,12 +28,12 @@ wait_for() {
 "${compose[@]}" up -d --wait
 wait_for http://localhost:8080/realms/banking/.well-known/openid-configuration
 
+(cd web/backoffice && npm ci --no-audit --no-fund && npm run build)
+dotnet build src/Banking.Api src/Banking.Backoffice.Bff --configuration Release >/dev/null
+
 export BANKING_MIGRATOR_CONNECTION="Host=localhost;Database=banking;Username=banking_migrator;Password=migrator-e2e"
 dotnet tool restore >/dev/null
 ./scripts/migrate.sh >/dev/null
-
-(cd web/backoffice && npm ci --no-audit --no-fund && npm run build)
-dotnet build src/Banking.Api src/Banking.Backoffice.Bff --configuration Release >/dev/null
 
 ASPNETCORE_ENVIRONMENT=E2E \
 ASPNETCORE_URLS=http://localhost:5080 \

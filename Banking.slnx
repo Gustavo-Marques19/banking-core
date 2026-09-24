@@ -9,5 +9,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Banking.ArchitectureTests/Banking.ArchitectureTests.csproj" />
     <Project Path="tests/Banking.IntegrationTests/Banking.IntegrationTests.csproj" />
+    <Project Path="tests/Banking.UnitTests/Banking.UnitTests.csproj" />
   </Folder>
 </Solution>

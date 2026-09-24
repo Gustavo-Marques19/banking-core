@@ -1,6 +1,6 @@
 # ADR-004: Controle de concorrência
 
-- Status: aceita (números de desempenho pendentes, medidos no M4)
+- Status: aceita (números de desempenho pendentes, medidos no M4). O mecanismo de lock e a atualização de saldo foram refinados pela [ADR-008](0008-imutabilidade-no-banco.md).
 - Data: 2026-09-24
 
 ## Contexto

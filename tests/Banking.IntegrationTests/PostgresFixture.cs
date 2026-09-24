@@ -40,6 +40,10 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public string AppConnectionString => ConnectionStringFor(DatabaseRoles.App, _appPassword);
 
+    /// <summary>Superusuário do container, para simular quem tem acesso total ao banco.</summary>
+    public string SuperuserConnectionString =>
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = "banking" }.ConnectionString;
+
     public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();

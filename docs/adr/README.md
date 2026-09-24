@@ -9,7 +9,7 @@
 | [005](0005-idempotencia.md) | Idempotência no Postgres, na mesma transação, com escopo por cliente | aceita |
 | [006](0006-transferencia-interna-e-externa.md) | Transferência interna síncrona, externa como saga com Clearing | aceita |
 | 007 | Outbox e inbox | a escrever no M5 |
-| 008 | Imutabilidade garantida pelo banco | a escrever no M2 |
+| [008](0008-imutabilidade-no-banco.md) | Banco como autoridade de saldo, sequência e balanceamento | aceita |
 | 009 | Autenticação e autorização | a escrever no M3 |
 | [010](0010-ambiente-de-desenvolvimento.md) | Codespaces e GitHub Actions, Vercel descartada | aceita |
 

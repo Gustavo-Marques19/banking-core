@@ -172,47 +172,47 @@ Cada milestone termina com **algo demonstrável e testado**. Não avance com tes
 
 **Primeiro passo: ambiente no Codespaces (`.devcontainer/`).** Todo o resto do M1 é feito dentro dele.
 
-- [ ] `.devcontainer/devcontainer.json` usando `dockerComposeFile`, com três serviços:
+- [x] `.devcontainer/devcontainer.json` usando `dockerComposeFile`, com três serviços:
   - `app`: imagem `mcr.microsoft.com/devcontainers/dotnet` com o SDK do .NET 10, onde você programa;
   - `postgres`: imagem alpine com **versão fixada** e volume nomeado para os dados;
   - `keycloak`: `start-dev --import-realm`, lendo o realm versionado em `.devcontainer/keycloak/realm-banking.json`.
-- [ ] Feature `docker-in-docker`, para que os Testcontainers funcionem dentro do codespace.
-- [ ] `postCreateCommand`: `dotnet restore` e `dotnet tool restore` (dotnet-ef fixado em `dotnet-tools.json` na raiz, o padrão do .NET 10) e migrations aplicadas.
-- [ ] Script de init do Postgres criando as roles `migrator` e `app`. O ambiente já nasce com a separação de privilégios.
-- [ ] `forwardPorts` para a API, o Keycloak e o Aspire Dashboard, com `portsAttributes` definindo labels. Todas as portas ficam **privadas** (o padrão do Codespaces). Nunca torne pública uma porta do Keycloak ou da API.
-- [ ] Credenciais só de desenvolvimento num `.env.example` versionado. O `.env` real fica no `.gitignore`, e qualquer segredo real vai para os Codespaces secrets.
-- [ ] Extensões: C# Dev Kit e um cliente de Postgres.
-- [ ] Máquina de 2 cores para começar. Suba para 4 só se Testcontainers ficar lento, porque a cota gratuita é consumida proporcionalmente aos cores.
-- [ ] Nas configurações do GitHub, idle timeout de 30 min e retenção curta de codespaces parados, para não gastar cota à toa.
-- [ ] RabbitMQ **não** entra agora. Ele é adicionado ao compose no M5.
+- [x] Feature `docker-in-docker`, para que os Testcontainers funcionem dentro do codespace.
+- [x] `postCreateCommand`: `dotnet restore` e `dotnet tool restore` (dotnet-ef fixado em `dotnet-tools.json` na raiz, o padrão do .NET 10) e migrations aplicadas.
+- [x] Script de init do Postgres criando as roles `migrator` e `app`. O ambiente já nasce com a separação de privilégios.
+- [x] `forwardPorts` para a API, o Keycloak e o Postgres (o Aspire Dashboard entra no M7), com `portsAttributes` definindo labels. Todas as portas ficam **privadas** (o padrão do Codespaces). Nunca torne pública uma porta do Keycloak ou da API.
+- [x] Credenciais só de desenvolvimento num `.env.example` versionado. O `.env` real fica no `.gitignore`, e qualquer segredo real vai para os Codespaces secrets.
+- [x] Extensões: C# Dev Kit e um cliente de Postgres.
+- [x] Máquina de 2 cores para começar. Suba para 4 só se Testcontainers ficar lento, porque a cota gratuita é consumida proporcionalmente aos cores.
+- [x] Idle timeout de 30 min e retenção curta documentados no README. É configuração da conta de quem usa, não do repositório.
+- [x] RabbitMQ **não** entra agora. Ele é adicionado ao compose no M5.
 - [ ] Opcional: rodar o CI dentro do mesmo devcontainer (`devcontainers/ci`), garantindo que o CI e o ambiente de desenvolvimento sejam idênticos.
 
 **Critério do passo:** num repositório recém-clonado, "Open in Codespaces" → `dotnet test` passa sem instalar nada à mão. O README ganha o badge "Open in GitHub Codespaces".
 
 Depois do ambiente pronto:
-- [ ] Solução .NET 10: `Banking.Api`, `Banking.Domain`, `Banking.Application`, `Banking.Infrastructure`, `Banking.Contracts`, mais `Banking.ArchitectureTests` e `Banking.IntegrationTests`. `Banking.UnitTests` nasce no M2, junto com o primeiro código de domínio.
-- [ ] O mesmo compose do devcontainer serve de referência para quem quiser rodar localmente com Docker/Colima. Não mantenha dois arquivos divergentes.
-- [ ] Migrations aplicadas pela role `migrator`, com a app conectando como `app` (sem DDL).
-- [ ] CI no GitHub Actions: build, testes (Testcontainers), gitleaks, CodeQL e Dependabot.
-- [ ] ArchitectureTests: Domain não referencia EF, ASP.NET nem Infrastructure.
-- [ ] `TimeProvider` injetado. Nenhum `DateTime.UtcNow` no domínio.
+- [x] Solução .NET 10: `Banking.Api`, `Banking.Domain`, `Banking.Application`, `Banking.Infrastructure`, `Banking.Contracts`, mais `Banking.ArchitectureTests` e `Banking.IntegrationTests`. `Banking.UnitTests` nasce no M2, junto com o primeiro código de domínio.
+- [x] O mesmo compose do devcontainer serve de referência para quem quiser rodar localmente com Docker/Colima. Não mantenha dois arquivos divergentes.
+- [x] Migrations aplicadas pela role `migrator`, com a app conectando como `app` (sem DDL).
+- [x] CI no GitHub Actions: build, testes (Testcontainers), gitleaks, CodeQL e Dependabot.
+- [x] ArchitectureTests: Domain não referencia EF, ASP.NET nem Infrastructure.
+- [x] `TimeProvider` injetado. Nenhum `DateTime.UtcNow` no domínio.
 
 **Critério:** CI verde num PR; a app sobe, conecta como `app` e recebe erro ao tentar `DROP TABLE`.
 
 ### M2: Ledger (o coração) (5 a 8 dias)
-- [ ] VOs `Money` e `Currency`. Sem construtor público que aceite estado inválido. Testes para `default(Money)`.
-- [ ] `LedgerAccount`, `LedgerTransaction` e `LedgerEntry` com `account_sequence` e `balance_after_minor` nas contas de cliente.
-- [ ] `account_balances` atualizada na mesma transação.
-- [ ] No Postgres:
+- [x] VOs `Money` e `Currency`. Sem construtor público que aceite estado inválido. `Money` é classe, então `default` é `null` e o compilador acusa (ADR-002).
+- [x] `LedgerAccount`, `LedgerTransaction` e `LedgerEntry` com `account_sequence` e `balance_after_minor` nas contas de cliente.
+- [x] `account_balances` atualizada na mesma transação, pelo trigger `ledger.apply_entry` (ADR-008).
+- [x] No Postgres:
   - CHECK `amount > 0`;
   - constraint trigger de balanceamento;
   - trigger anti UPDATE/DELETE;
   - REVOKE;
   - `UNIQUE(account_id, sequence)`;
   - `UNIQUE(reverses_transaction_id)`.
-- [ ] Reversão como nova transação linkada.
-- [ ] **Property-based tests** (FsCheck/CsCheck): para qualquer sequência de postings válidos, Σ D = Σ C e o saldo projetado bate com Σ entries.
-- [ ] Teste de integração: `INSERT` desbalanceado direto via SQL falha no commit, e `UPDATE` num entry falha.
+- [x] Reversão como nova transação linkada.
+- [x] **Property-based tests** (FsCheck/CsCheck): para qualquer sequência de postings válidos, Σ D = Σ C e o saldo projetado bate com Σ entries.
+- [x] Teste de integração: `INSERT` desbalanceado direto via SQL falha no commit, e `UPDATE` num entry falha.
 
 **Critério:** é impossível, mesmo via SQL cru com a role `app`, criar um ledger inconsistente.
 

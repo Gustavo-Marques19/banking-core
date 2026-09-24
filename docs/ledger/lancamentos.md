@@ -42,7 +42,7 @@ Nenhum lançamento. É gravada a operação com status `REJECTED` e o motivo (`I
 
 ## 4. Transferência externa: reserva (Tx1, A envia R$ 100)
 
-`external_id = "{operationId}:reservation"`, estado `CREATED`
+`external_id = "external-transfer:{id}:reservation"`, estado `CREATED`
 
 | Conta | D | C |
 |---|---|---|
@@ -53,7 +53,7 @@ O dinheiro sai do saldo de A na hora. Clearing passa a dever R$ 100 a alguém fo
 
 ## 5. Transferência externa concluída
 
-`external_id = "{operationId}:resolution"`, estado `COMPLETED`
+`external_id = "external-transfer:{id}:resolution"`, estado `COMPLETED`
 
 | Conta | D | C |
 |---|---|---|
@@ -64,7 +64,7 @@ Clearing volta a zero para essa operação. Settlement (ativo) diminui: o dinhei
 
 ## 6. Transferência externa recusada ou cancelada
 
-`external_id = "{operationId}:resolution"`, `reverses_transaction_id` = Tx1, estado `FAILED` ou `CANCELLED`
+`external_id = "external-transfer:{id}:resolution"`, `reverses_transaction_id` = Tx1, estado `FAILED` ou `CANCELLED`
 
 | Conta | D | C |
 |---|---|---|
@@ -84,7 +84,7 @@ Nenhum lançamento novo. Os R$ 100 continuam em Clearing até a reconciliação 
 3. A reconciliação consulta o status e recebe `Completed`.
 4. Lançamento do cenário 5, uma única vez.
 
-Se o webhook chegar ao mesmo tempo que a reconciliação, as duas tentam gravar `"{operationId}:resolution"`. O UNIQUE em `external_id` deixa só uma passar.
+Se o webhook chegar ao mesmo tempo que a reconciliação, as duas tentam gravar `"external-transfer:{id}:resolution"`. O UNIQUE em `external_id` deixa só uma passar.
 
 ## 9. Estorno de transferência interna (M8)
 

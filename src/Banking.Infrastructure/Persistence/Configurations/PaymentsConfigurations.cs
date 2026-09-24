@@ -54,6 +54,36 @@ internal sealed class InternalTransferConfiguration : IEntityTypeConfiguration<I
     }
 }
 
+internal sealed class ExternalTransferConfiguration : IEntityTypeConfiguration<ExternalTransfer>
+{
+    public void Configure(EntityTypeBuilder<ExternalTransfer> builder)
+    {
+        builder.ToTable("external_transfers", DatabaseSchemas.Payments, t =>
+            t.HasCheckConstraint("ck_external_transfers_amount_positive", "amount_minor > 0"));
+        builder.HasKey(t => t.Id);
+        builder.HasIndex(t => new { t.RequestedBy, t.IdempotencyKey }).IsUnique();
+        builder.HasIndex(t => t.SourceAccountId);
+        builder.HasIndex(t => new { t.Status, t.NextCheckAt });
+
+        builder.Property(t => t.CurrencyCode).HasColumnName("currency").HasColumnType("char(3)");
+        builder.Property(t => t.DestinationBank).HasMaxLength(8);
+        builder.Property(t => t.DestinationBranch).HasMaxLength(4);
+        builder.Property(t => t.DestinationAccount).HasMaxLength(30);
+        builder.Property(t => t.RequestedBy).HasMaxLength(100);
+        builder.Property(t => t.IdempotencyKey).HasMaxLength(64);
+        builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(t => t.RejectionReason).HasConversion<string>().HasMaxLength(40);
+        builder.Property(t => t.FailureReason).HasMaxLength(80);
+        builder.Ignore(t => t.Amount);
+        builder.Ignore(t => t.ClientReference);
+        builder.Ignore(t => t.ReservationExternalId);
+        builder.Ignore(t => t.ResolutionExternalId);
+        builder.Ignore(t => t.IsTerminal);
+
+        builder.HasOne<Account>().WithMany().HasForeignKey(t => t.SourceAccountId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 internal sealed class LimitUsageRecord
 {
     public string LimitKind { get; set; } = string.Empty;

@@ -36,3 +36,18 @@ public sealed record TransferCompletedV1(
 
 [EventType("TransferRejected", 1)]
 public sealed record TransferRejectedV1(Guid TransferId, Guid SourceAccountId, string Amount, string Currency, string Reason);
+
+[EventType("ExternalTransferCreated", 1)]
+public sealed record ExternalTransferCreatedV1(Guid ExternalTransferId, Guid SourceAccountId, string Amount, string Currency);
+
+[EventType("ExternalTransferCompleted", 1)]
+public sealed record ExternalTransferCompletedV1(Guid ExternalTransferId, Guid SourceAccountId, string Amount, string Currency);
+
+[EventType("ExternalTransferFailed", 1)]
+public sealed record ExternalTransferFailedV1(Guid ExternalTransferId, Guid SourceAccountId, string Amount, string Currency, string Reason);
+
+[EventType("ExternalTransferCancelled", 1)]
+public sealed record ExternalTransferCancelledV1(Guid ExternalTransferId, Guid SourceAccountId, string Amount, string Currency);
+
+[EventType("ExternalTransferNeedsReview", 1)]
+public sealed record ExternalTransferNeedsReviewV1(Guid ExternalTransferId, Guid SourceAccountId, int SubmitAttempts);

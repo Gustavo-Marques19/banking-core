@@ -2,7 +2,7 @@
 
 Estados das operações da Fase 1. O ledger não tem estado: uma transação contábil existe ou não existe ([ADR-003](adr/0003-modelo-contabil.md)).
 
-Toda mudança de estado usa coluna de versão. Se duas partes tentam mudar a mesma operação, uma ganha e a outra relê. Se o estado relido já for terminal, a segunda não faz nada.
+Toda mudança de estado acontece com a linha da operação travada (`SELECT ... FOR UPDATE`). Se duas partes tentam mudar a mesma operação, a segunda espera, relê o estado e, se ele já for terminal, não faz nada. A implementação trocou a coluna de versão prevista no M0 por esse lock: a transição já precisa de transação e do lock de saldo, então o lock de linha sai de graça e elimina o retry.
 
 ## Depósito
 
@@ -32,6 +32,7 @@ Também é uma transação só. O estorno (M8) é uma operação nova que aponta
 
 ```mermaid
 stateDiagram-v2
+    [*] --> REJECTED: saldo, bloqueio ou limite; sem reserva
     [*] --> CREATED: Tx1, reserva em Clearing
     CREATED --> CANCELLED: cancelamento antes do envio
     CREATED --> UNKNOWN: worker grava antes de chamar o provider
@@ -44,10 +45,12 @@ stateDiagram-v2
     COMPLETED --> [*]
     FAILED --> [*]
     CANCELLED --> [*]
+    REJECTED --> [*]
 ```
 
 | Transição | Quem dispara | Lançamento |
 |---|---|---|
+| → REJECTED | API (Tx1) | nenhum |
 | → CREATED | API (Tx1) | `D Cliente / C Clearing` |
 | CREATED → CANCELLED | cliente ou operador | estorno `D Clearing / C Cliente` |
 | CREATED → UNKNOWN | worker de envio, antes da chamada | nenhum |

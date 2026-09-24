@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { api } from "../api/client";
+import { api } from "@banking/web-shared/client";
 import type { ReconciliationReport } from "../api/types";
-import { ErrorState } from "../components/States";
-import { formatDateTime } from "../lib/money";
+import { ErrorState } from "@banking/web-shared/States";
+import { formatDateTime } from "@banking/web-shared/money";
 
 /** O que cada verificação quer dizer, para quem lê a divergência às 3h da manhã. */
 const meaning: Record<string, string> = {

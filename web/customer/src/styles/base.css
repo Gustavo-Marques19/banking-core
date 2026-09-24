@@ -1,0 +1,610 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 100%;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* Foco sempre visível, no acento (DESIGN.md). */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Estrutura */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__name {
+  font-weight: 600;
+  font-size: var(--text-l);
+  margin-right: auto;
+}
+
+.topbar__who {
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+
+.nav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--text-m);
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+/* Item ativo: texto escuro e sublinhado no acento, sem fundo. */
+.nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-12);
+}
+
+main.narrow {
+  max-width: 32rem;
+}
+
+.page-header {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+}
+
+.page-header h1 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.page-header h1:focus {
+  outline: none;
+}
+
+.page-header p {
+  color: var(--text-muted);
+}
+
+.panel {
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.section {
+  margin-top: var(--space-12);
+}
+
+.section__title {
+  font-size: var(--text-l);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+/* Saldo: o maior texto do app e a primeira coisa da tela (DESIGN.md). */
+
+.balance {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.balance__label {
+  font-size: var(--text-m);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.balance__value {
+  font-size: var(--text-balance);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance__value--pending {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.balance__as-of {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+/* Dinheiro */
+
+.money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.money--credit {
+  color: var(--success);
+}
+
+/* Extrato */
+
+.statement {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+/* Descrição quebra linha; o valor fica sempre à direita, também no celular. */
+.statement__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+}
+
+.statement__line + .statement__line {
+  border-top: 1px solid var(--border);
+}
+
+.statement__what {
+  overflow-wrap: anywhere;
+}
+
+.statement__what .muted,
+.statement__amounts .muted {
+  font-size: var(--text-s);
+}
+
+.statement__amounts {
+  text-align: right;
+  font-weight: 500;
+}
+
+.statement__amounts .muted {
+  font-weight: 400;
+}
+
+.statement__more {
+  margin-top: var(--space-4);
+}
+
+/* Avisos */
+
+.notices {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.notices__item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-4) var(--space-6);
+}
+
+.notices__item + .notices__item {
+  border-top: 1px solid var(--border);
+}
+
+.notices__item .muted {
+  font-size: var(--text-s);
+}
+
+/* Botões */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-m);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Ação principal da tela: o único preenchimento no acento. */
+.button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.button--primary:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+.button--danger {
+  color: var(--danger);
+}
+
+.button--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+/* Formulários */
+
+.form {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.form__row .field {
+  flex: 1 1 12rem;
+}
+
+.form__row .field--short {
+  flex: 0 1 8rem;
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.field label,
+.field legend {
+  font-size: var(--text-m);
+  font-weight: 500;
+  padding: 0;
+}
+
+.field--inline {
+  grid-template-columns: auto minmax(0, 20rem);
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--text-muted);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.field input[type="radio"] {
+  width: auto;
+  min-height: 0;
+  accent-color: var(--accent);
+}
+
+.field input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field__hint {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+.field__error {
+  font-size: var(--text-s);
+  color: var(--danger);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-weight: 400;
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-control);
+  font-size: var(--text-s);
+}
+
+/* Resumo antes de confirmar */
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-3) var(--space-6);
+  margin: 0 0 var(--space-6);
+}
+
+.facts dt {
+  color: var(--text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.facts__amount {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Estado sempre em texto; a cor só reforça. */
+
+.status {
+  font-size: var(--text-s);
+  font-weight: 500;
+}
+
+.status--warning {
+  color: var(--warning);
+}
+
+.status--success {
+  color: var(--success);
+}
+
+.status--danger {
+  color: var(--danger);
+}
+
+/* Acompanhamento da transferência externa */
+
+.tracking {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tracking__status {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.timeline {
+  list-style: none;
+  margin: var(--space-2) 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.timeline__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-muted);
+}
+
+/* O marcador muda de forma, não só de cor: vazio, anel e cheio. */
+.timeline__step::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex: none;
+}
+
+.timeline__step--done {
+  color: var(--text);
+}
+
+.timeline__step--done::before {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.timeline__step--current {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.timeline__step--current::before {
+  border-color: var(--warning);
+  border-width: 4px;
+}
+
+/* Vazio, carregando, erro */
+
+.state {
+  padding: var(--space-6);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-panel);
+  color: var(--text-muted);
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.state--error {
+  border-style: solid;
+  border-color: var(--danger);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.state--error strong {
+  color: var(--danger);
+}
+
+/* Diálogo de confirmação: o único elemento elevado, por isso a única sombra. */
+
+dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  padding: var(--space-6);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 16px 40px rgb(22 33 42 / 0.18);
+}
+
+dialog::backdrop {
+  background: rgb(22 33 42 / 0.4);
+}
+
+.dialog__title {
+  font-size: var(--text-l);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.dialog__error {
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 40rem) {
+  main {
+    padding: var(--space-6) var(--space-4) var(--space-12);
+  }
+
+  .topbar {
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .topbar__who {
+    display: none;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .balance,
+  .panel {
+    padding: var(--space-4);
+  }
+
+  .statement__line,
+  .notices__item {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .facts dd + dt {
+    margin-top: var(--space-2);
+  }
+}

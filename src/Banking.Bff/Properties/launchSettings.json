@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "backoffice": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5180",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Bff__ClientId": "banking-backoffice",
+        "Bff__ClientSecret": "backoffice-dev-only",
+        "Bff__AllowedRoles": "operator,admin",
+        "Bff__CookieName": "__Host-backoffice",
+        "Bff__SpaDevServerUrl": "http://localhost:5173"
+      }
+    },
+    "customer": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5190",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Bff__ClientId": "banking-web",
+        "Bff__ClientSecret": "web-dev-only",
+        "Bff__AllowedRoles": "customer",
+        "Bff__CookieName": "__Host-banking",
+        "Bff__SpaDevServerUrl": "http://localhost:5174"
+      }
+    }
+  }
+}

@@ -114,6 +114,52 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "banking-web",
+      "name": "App do cliente (BFF)",
+      "description": "Usado só pelo BFF do app do cliente, mesma configuração do backoffice com outro segredo e outra porta. https://localhost é o host dos testes.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "web-dev-only",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5190/signin-oidc",
+        "https://localhost/signin-oidc"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5190/##https://localhost/"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience banking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "banking-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -146,6 +192,24 @@
         {
           "type": "password",
           "value": "bruno-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customer"
+      ]
+    },
+    {
+      "username": "carla",
+      "enabled": true,
+      "email": "carla@banking.test",
+      "emailVerified": true,
+      "firstName": "Carla",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "carla-dev-only",
           "temporary": false
         }
       ],

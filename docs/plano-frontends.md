@@ -7,7 +7,9 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 - **BFF em ASP.NET Core.** O navegador nunca recebe token. O BFF faz o login OIDC (authorization code com PKCE), guarda os tokens do lado do servidor e entrega um cookie `HttpOnly`, `Secure`, `SameSite=Strict`, com proteção anti-CSRF. As chamadas passam pelo BFF, que as repassa à API com o token. Um XSS não consegue roubar credencial. (ADR-011)
 - **React com TypeScript e Vite.** Tipos escritos à mão: as respostas da API não têm schema no OpenAPI (os endpoints devolvem `IResult`), então a geração sairia vazia. Dinheiro trafega como string decimal, igual à API, e nunca vira `number` (ADR-002).
 - **Dois fronts, dois clientes no Keycloak.** Backoffice e app do cliente ficam separados: sessões, permissões e riscos diferentes.
-- **Direção visual por front:** [web/backoffice/DESIGN.md](../web/backoffice/DESIGN.md). O app do cliente terá a sua.
+- **Direção visual por front:** [web/backoffice/DESIGN.md](../web/backoffice/DESIGN.md) e [web/customer/DESIGN.md](../web/customer/DESIGN.md).
+- **Um BFF, duas instâncias.** O F2 nasceu como BFF do backoffice; no F4 virou `src/Banking.Bff`, configurado por instância (ADR-011).
+- **Workspace npm em `web/`.** Cliente HTTP, formatação e leitura de dinheiro, estados de tela e diálogo de confirmação ficam em `web/shared`, usados pelos dois fronts.
 
 ## Marcos
 
@@ -32,11 +34,13 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 - [x] Testes E2E (Playwright) contra o ambiente completo e checagem de acessibilidade (axe).
 
 ### F4: app do cliente
-- [ ] Direção visual própria (nova rodada de perguntas).
-- [ ] Contas, saldo, extrato, notificações.
-- [ ] Transferência interna e externa com tela de confirmação e uma chave de idempotência por intenção de pagamento.
-- [ ] Acompanhamento da transferência externa até o estado final.
-- [ ] E2E e acessibilidade.
+- [x] Direção visual própria (nova rodada de perguntas): tema claro, mesmo acento do backoffice.
+- [x] Backend: busca de conta de destino por agência e número, com titular mascarado e limite próprio (threat model T22); cliente `banking-web` no Keycloak.
+- [x] Cadastro e abertura de conta pelo app.
+- [x] Contas, saldo, extrato com "carregar mais", notificações.
+- [x] Transferência interna e externa com tela de confirmação e uma chave de idempotência por intenção de pagamento (T23). Valor digitado em pt-BR e convertido para o formato da API sem passar por `number`.
+- [x] Acompanhamento da transferência externa até o estado final, com cancelamento antes do envio.
+- [x] E2E e acessibilidade: cadastro, transferência, resposta perdida na rede, clique duplo, recusa, transferência externa concluída e recusada, avisos pelo RabbitMQ, operador barrado, nenhum token no navegador, celular a 375 px, axe.
 
 ## Riscos
 

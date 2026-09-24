@@ -45,7 +45,7 @@ flowchart LR
 
 ## Ameaças
 
-Testes em `tests/Banking.IntegrationTests` (IT) e `tests/Banking.UnitTests` (UT), no formato `Classe.Metodo`.
+Testes em `tests/Banking.IntegrationTests` (IT) e `tests/Banking.UnitTests` (UT), no formato `Classe.Metodo`. Os de front ficam em `web/*/e2e` (E2E, Playwright) e `web/*/src` (UT, Vitest).
 
 | # | STRIDE | Ameaça | Mitigação | Prova |
 |---|---|---|---|---|
@@ -70,6 +70,9 @@ Testes em `tests/Banking.IntegrationTests` (IT) e `tests/Banking.UnitTests` (UT)
 | T19 | Tampering | Liquidação e estorno da mesma transferência externa, ou liquidação em dobro | `external_id` único para a conclusão; UNKNOWN só sai por consulta ao provider | IT `ExternalTransferTests.Timeout_com_processamento_no_provider_conclui_sem_debito_duplo`; UT `ExternalTransferTests.Estado_terminal_ignora_resultados_atrasados` |
 | T20 | Tampering | Evento perdido ou aplicado duas vezes | Outbox na transação, publisher confirm, `mandatory`, inbox ([ADR-007](adr/0007-outbox-e-inbox.md)) | IT `MessagingTests` (broker pausado, app derrubada, entrega duplicada) |
 | T21 | Tampering | Operador estorna transferência sozinho | Estorno pedido por um operador e aprovado por outro; recusado se o destinatário já gastou | IT `HardeningTests.Estorno_aprovado_por_outro_operador_devolve_o_dinheiro_com_transacao_ligada`, `HardeningTests.Estorno_e_recusado_se_o_destinatario_ja_gastou` |
+| T22 | Information disclosure | Cliente varre números de conta na busca de destino e monta uma lista de clientes | Busca só para `customer`; devolve primeiro nome e inicial do sobrenome, sem CPF nem status; limite próprio de 20 buscas por minuto por usuário | IT `CustomerAndAccountTests.Busca_por_agencia_e_numero_devolve_o_id_e_o_titular_mascarado`, `CustomerAndAccountTests.Busca_de_conta_tem_limite_proprio_por_usuario` |
+| T23 | Tampering | Pagamento em dobro por clique duplo ou por reenvio depois de a resposta se perder na rede | O app gera uma chave de idempotência por intenção de pagamento e a repete em todo reenvio; a API devolve a mesma resposta ([ADR-005](adr/0005-idempotencia.md)) | E2E `customer.spec.ts` (resposta perdida na rede, clique duplo); UT `Transfer.test.tsx` |
+| T24 | Elevation | Operador usa o app do cliente, ou cliente usa o backoffice | Cada instância do BFF aceita só os próprios papéis, com cliente OIDC e cookie próprios ([ADR-011](adr/0011-bff.md)) | IT `BffTests.Operador_nao_entra_no_app_do_cliente`, `BffTests.Cliente_nao_entra_no_backoffice` |
 
 ## Riscos aceitos na Fase 1
 

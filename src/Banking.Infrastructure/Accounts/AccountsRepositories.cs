@@ -37,6 +37,9 @@ internal sealed class AccountRepository(BankingDbContext db) : IAccountRepositor
             .OrderBy(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 
+    public Task<Account?> FindByNumberAsync(string branch, string number, CancellationToken cancellationToken) =>
+        db.Set<Account>().AsNoTracking().FirstOrDefaultAsync(a => a.Branch == branch && a.Number == number, cancellationToken);
+
     public Task<long> NextNumberAsync(CancellationToken cancellationToken) =>
         DbCommands.ScalarAsync<long>(db, "SELECT nextval('accounts.account_number_seq')", cancellationToken);
 }

@@ -14,6 +14,12 @@ public sealed record AccountView(
         account.Id, account.CustomerId, account.Branch, account.Number, account.CurrencyCode, Codes.Of(account.Status), account.CreatedAt);
 }
 
+/// <summary>
+/// O que quem vai transferir precisa para conferir o destino: o id para a transferência e o titular mascarado
+/// (primeiro nome e inicial do sobrenome). Nada de CPF nem status.
+/// </summary>
+public sealed record AccountLookupView(Guid Id, string Branch, string Number, string Currency, string HolderName);
+
 /// <summary>Na Fase 1 os dois saldos são iguais: a reserva de transferência externa é lançamento, não hold (ADR-006).</summary>
 public sealed record BalanceView(Guid AccountId, string LedgerBalance, string AvailableBalance, string Currency, DateTimeOffset AsOf);
 
@@ -144,6 +150,37 @@ public sealed class AccountQueriesHandler(
             [.. lines.Select(l => new StatementLineView(
                 l.TransactionId, l.Type, l.Description, l.Direction, l.Amount.ToDecimalString(), l.BalanceAfter.ToDecimalString(), l.Sequence, l.PostedAt))],
             next);
+    }
+}
+
+/// <summary>
+/// Busca de conta de destino por agência e número. O nome vem mascarado e o endpoint tem limite próprio, porque varrer
+/// números é o caminho óbvio para montar uma lista de clientes (threat model T22).
+/// </summary>
+public sealed class AccountLookupHandler(IAccountRepository accounts, ICustomerRepository customers)
+{
+    private const int NumberLength = 8;
+
+    public async Task<Result<AccountLookupView>> HandleAsync(string? branch, string? number, CancellationToken cancellationToken)
+    {
+        var digits = number?.Trim() ?? string.Empty;
+        if (branch?.Trim() is not { Length: 4 } normalizedBranch || !normalizedBranch.All(char.IsAsciiDigit)
+            || digits.Length is 0 or > NumberLength || !digits.All(char.IsAsciiDigit))
+        {
+            return Error.Validation("invalid_account_number", "Informe a agência com 4 dígitos e o número da conta com até 8.");
+        }
+
+        var account = await accounts.FindByNumberAsync(normalizedBranch, digits.PadLeft(NumberLength, '0'), cancellationToken);
+        var holder = account is null ? null : await customers.FindAsync(account.CustomerId, cancellationToken);
+        return account is null || holder is null
+            ? Error.NotFound("Conta")
+            : new AccountLookupView(account.Id, account.Branch, account.Number, account.CurrencyCode, MaskName(holder.Name));
+    }
+
+    public static string MaskName(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 ? parts[0] : $"{parts[0]} {char.ToUpperInvariant(parts[^1][0])}.";
     }
 }
 

@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { api } from "../api/client";
+import { api } from "@banking/web-shared/client";
 import type { AccountView, DepositView, ExternalTransferView, ManualResolutionView, ReversalView, TransferView } from "../api/types";
 import { Amount } from "../components/Amount";
-import { ConfirmDialog } from "../components/ConfirmDialog";
-import { Empty, ErrorState, Loading } from "../components/States";
-import { currencySymbol, formatAmount, formatDateTime, shortId } from "../lib/money";
-import { useResource } from "../lib/useResource";
+import { ConfirmDialog } from "@banking/web-shared/ConfirmDialog";
+import { Empty, ErrorState, Loading } from "@banking/web-shared/States";
+import { currencySymbol, formatAmount, formatDateTime, shortId } from "@banking/web-shared/money";
+import { useResource } from "@banking/web-shared/useResource";
 import { useSession } from "../session";
 
 /** Um pedido esperando o segundo operador, já com o que é preciso para decidir. */

@@ -1,4 +1,4 @@
-# Dependências dos testes E2E do backoffice (scripts/e2e.sh). Senhas só para teste.
+# Dependências dos testes E2E dos dois fronts (scripts/e2e.sh). Senhas só para teste.
 name: banking-e2e
 
 services:
@@ -29,3 +29,17 @@ services:
       - ../../.devcontainer/keycloak:/opt/keycloak/data/import:ro
     ports:
       - "8080:8080"
+
+  # Sem broker, as notificações do app do cliente nunca chegariam.
+  rabbitmq:
+    image: rabbitmq:4.3.6-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: banking
+      RABBITMQ_DEFAULT_PASS: rabbit-e2e
+    ports:
+      - "5672:5672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 30

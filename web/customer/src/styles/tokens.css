@@ -1,0 +1,37 @@
+/* Valores de web/customer/DESIGN.md. Contraste conferido lá. */
+:root {
+  color-scheme: light;
+
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --surface-sunken: #eef2f3;
+  --border: #d5dde0;
+  --text: #16212a;
+  --text-muted: #56656d;
+  --accent: #1f6f76;
+  --success: #1e7a4f;
+  --warning: #8a5a00;
+  --danger: #b3261e;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-s: 0.8125rem;
+  --text-m: 0.9375rem;
+  --text-l: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  /* Só o saldo usa este tamanho. */
+  --text-balance: clamp(2.25rem, 6vw, 3rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  --radius-control: 6px;
+  --radius-panel: 10px;
+}

@@ -22,6 +22,11 @@ internal static class AccountsEndpoints
                 Results.Ok(await handler.ListMineAsync(http.User.ToActor(), ct)))
             .RequireAuthorization(Policies.Customer);
 
+        accounts.MapGet("/lookup", async (string? branch, string? number, AccountLookupHandler handler, CancellationToken ct) =>
+                ApiResults.From(await handler.HandleAsync(branch, number, ct), Results.Ok))
+            .RequireAuthorization(Policies.Customer)
+            .RequireRateLimiting(RateLimitingSetup.LookupPolicy);
+
         accounts.MapGet("/{id:guid}", async (Guid id, HttpContext http, AccountQueriesHandler handler, CancellationToken ct) =>
             ApiResults.From(await handler.GetAsync(http.User.ToActor(), id, ct), Results.Ok));
 

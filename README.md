@@ -18,15 +18,18 @@ Núcleo bancário com dinheiro fictício, em .NET 10 e PostgreSQL, construído p
 | Adulteração da auditoria por superusuário é detectada | Hash encadeado calculado pelo banco e verificado fora dele | [`AuditTests`](tests/Banking.IntegrationTests/Api/AuditTests.cs) |
 | CPF nunca aparece em log, evento ou banco em claro | AES-GCM com blind index, máscara em resposta, `ToString` e logs | [`ObservabilityTests`](tests/Banking.IntegrationTests/Api/ObservabilityTests.cs) |
 | Clearing sempre igual às transferências externas em aberto; ledger bate com o extrato do provider | Reconciliação periódica, fonte da métrica `ledger.balance_mismatch` | [`ExternalTransferTests`](tests/Banking.IntegrationTests/Api/ExternalTransferTests.cs) |
+| O navegador nunca recebe token; operador não entra no app do cliente, nem cliente no backoffice | BFF com cookie `HttpOnly`, uma instância por front ([ADR-011](docs/adr/0011-bff-para-os-fronts.md)) | [`BffTests`](tests/Banking.IntegrationTests/Api/BffTests.cs), E2E dos dois fronts |
+| Clique duplo ou resposta perdida na rede não paga duas vezes | O app gera uma chave de idempotência por intenção de pagamento e a repete no reenvio | [`customer.spec.ts`](web/customer/e2e/customer.spec.ts) |
 
-O [threat model](docs/threat-model.md) liga cada uma das 21 ameaças mapeadas ao teste que cobre a mitigação.
+O [threat model](docs/threat-model.md) liga cada uma das 24 ameaças mapeadas ao teste que cobre a mitigação.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
-    Client[Cliente / operador] -->|JWT| API
-    KC[Keycloak] -. emite tokens .-> Client
+    Browser[Navegador] -->|cookie de sessão| BFF[BFF: backoffice e app do cliente]
+    BFF -->|JWT do usuário| API
+    KC[Keycloak] -. login OIDC .-> BFF
     subgraph Monólito modular
         API[ASP.NET Core API] --> App[Application]
         App --> Domain
@@ -44,6 +47,7 @@ flowchart LR
 - **Monólito modular** ([ADR-001](docs/adr/0001-monolito-modular.md)): um schema por módulo, fronteiras garantidas por testes de arquitetura.
 - **Ledger de partida dobrada** ([ADR-003](docs/adr/0003-modelo-contabil.md)): conta do cliente separada da conta contábil; contas de sistema Funding, Settlement e Clearing. Os lançamentos de cada cenário estão em [docs/ledger/lancamentos.md](docs/ledger/lancamentos.md).
 - **Dinheiro em centavos** ([ADR-002](docs/adr/0002-representacao-monetaria.md)): `bigint` no banco, string decimal na API, parse que recusa em vez de arredondar.
+- **Dois fronts atrás de um BFF** ([ADR-011](docs/adr/0011-bff-para-os-fronts.md)): backoffice para operadores (aprovações, revisão manual, reconciliação, auditoria) e app do cliente (conta, extrato, transferências, avisos), em React. Plano em [docs/plano-frontends.md](docs/plano-frontends.md).
 - **Transferência externa em etapas** ([ADR-006](docs/adr/0006-transferencia-interna-e-externa.md)): máquinas de estado em [docs/estados.md](docs/estados.md).
 
 ## Como rodar
@@ -64,14 +68,25 @@ Sobe Postgres e RabbitMQ reais com Testcontainers, hospeda a API no processo e r
 
 1. Abra pelo botão acima. O ambiente sobe Postgres, Keycloak, RabbitMQ e o Aspire Dashboard, aplica as migrations e gera as chaves de desenvolvimento em user-secrets.
 2. `dotnet run --project src/Banking.Api` sobe a API na porta 5080.
-3. Token de desenvolvimento (usuários `alice`, `bruno`, `olga`, `otto`, `ada`; senha `<usuario>-dev-only`):
+3. Token de desenvolvimento (usuários `alice`, `bruno`, `carla`, `olga`, `otto`, `ada`; senha `<usuario>-dev-only`):
 
    ```sh
    curl -s -d grant_type=password -d client_id=banking-cli -d username=alice -d password=alice-dev-only \
      http://keycloak:8080/realms/banking/protocol/openid-connect/token
    ```
 
-4. `dotnet test` roda todos os testes.
+4. Os fronts, cada um com o Vite e a sua instância do BFF (abra pelo endereço do BFF, não pelo do Vite):
+
+   ```sh
+   npm run dev --prefix web/backoffice &
+   dotnet run --project src/Banking.Bff --launch-profile backoffice   # http://localhost:5180 (olga, otto, ada)
+   npm run dev --prefix web/customer &
+   dotnet run --project src/Banking.Bff --launch-profile customer     # http://localhost:5190 (alice, bruno, carla)
+   ```
+
+   `carla` ainda não tem cadastro: serve para ver a abertura de conta pelo app. Se o Keycloak do devcontainer foi criado antes do app do cliente, recrie o container dele para importar o cliente `banking-web`.
+
+5. `dotnet test` roda os testes do backend; `npm test --workspaces --prefix web`, os dos fronts; `./scripts/e2e.sh`, os E2E dos dois fronts contra a pilha completa.
 
 Para não gastar a cota gratuita à toa, em [github.com/settings/codespaces](https://github.com/settings/codespaces) defina idle timeout de 30 minutos e retenção curta.
 
@@ -101,7 +116,6 @@ Toda resposta traz `X-Trace-Id`. Com ele, ou com o id da operação:
 
 - **Pix, BaaS real e KYC:** escopo da Fase 2, atrás de `IBankingProvider`.
 - **Cartões e holds:** a reserva de transferência externa usa Clearing, sem hold ([ADR-006](docs/adr/0006-transferencia-interna-e-externa.md)). Holds entram com autorização de cartão.
-- **Front-end:** outra habilidade, e diluiria o foco. A API tem OpenAPI em desenvolvimento.
 - **Microserviços e deploy em produção:** o monólito modular resolve a Fase 1. Há Dockerfile com imagem chiseled, verificada pelo Trivy, mas não há infraestrutura de produção.
 - **Vídeo da demo:** não gravado. A saída de `make demo` no CI cumpre o papel de evidência reproduzível.
 
@@ -114,6 +128,8 @@ Toda resposta traz `X-Trace-Id`. Com ele, ou com o id da operação:
 | `src/Banking.Infrastructure` | EF Core, SQL do ledger, outbox, RabbitMQ, provider, reconciliação |
 | `src/Banking.Api` | Endpoints, autenticação, rate limiting, observabilidade |
 | `src/Banking.Contracts` | Requests e eventos versionados |
+| `src/Banking.Bff` | BFF dos dois fronts: login OIDC, sessão por cookie, CSRF, proxy para a API |
+| `web/` | Workspace npm: `backoffice`, `customer` (app do cliente) e `shared`, cada front com o seu `DESIGN.md` |
 | `tests/` | Unitários (com testes de propriedade), arquitetura e integração com Testcontainers |
 | `tools/Banking.Demo` | `make demo` e `make bench` |
 | `docs/` | [Plano](docs/plano-fase-1.md), [ADRs](docs/adr/README.md), [lançamentos](docs/ledger/lancamentos.md), [estados](docs/estados.md), [threat model](docs/threat-model.md) |

@@ -10,7 +10,7 @@ export default defineConfig({
     hmr: { clientPort: 5180 },
   },
   build: {
-    outDir: "../../src/Banking.Backoffice.Bff/wwwroot",
+    outDir: "dist",
     emptyOutDir: true,
   },
   test: {

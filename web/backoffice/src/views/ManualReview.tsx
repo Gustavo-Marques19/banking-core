@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import { api } from "../api/client";
+import { api } from "@banking/web-shared/client";
 import type { ExternalTransferView } from "../api/types";
 import { Amount } from "../components/Amount";
-import { Empty, ErrorState, Loading } from "../components/States";
-import { formatDateTime, shortId } from "../lib/money";
-import { useResource } from "../lib/useResource";
+import { Empty, ErrorState, Loading } from "@banking/web-shared/States";
+import { formatDateTime, shortId } from "@banking/web-shared/money";
+import { useResource } from "@banking/web-shared/useResource";
 
 export function ManualReview() {
   const [transfers, reload] = useResource(() => api<ExternalTransferView[]>("/api/v1/operations/external-transfers-in-review"));

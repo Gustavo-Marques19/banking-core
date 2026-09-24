@@ -13,8 +13,9 @@
     "cpus": 2,
     "memory": "8gb"
   },
-  "forwardPorts": [5180, 5080, "keycloak:8080", "postgres:5432", "rabbitmq:15672", "aspire-dashboard:18888"],
+  "forwardPorts": [5190, 5180, 5080, "keycloak:8080", "postgres:5432", "rabbitmq:15672", "aspire-dashboard:18888"],
   "portsAttributes": {
+    "5190": { "label": "App do cliente (BFF)", "onAutoForward": "notify" },
     "5180": { "label": "Backoffice (BFF)", "onAutoForward": "notify" },
     "5080": { "label": "Banking API", "onAutoForward": "notify" },
     "keycloak:8080": { "label": "Keycloak", "onAutoForward": "silent" },
@@ -22,7 +23,7 @@
     "rabbitmq:15672": { "label": "RabbitMQ management", "onAutoForward": "silent" },
     "aspire-dashboard:18888": { "label": "Aspire Dashboard (traces, métricas, logs)", "onAutoForward": "silent" }
   },
-  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh && ./scripts/dev-secrets.sh && npm ci --prefix web/backoffice",
+  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh && ./scripts/dev-secrets.sh && npm ci --prefix web",
   "customizations": {
     "vscode": {
       "extensions": [

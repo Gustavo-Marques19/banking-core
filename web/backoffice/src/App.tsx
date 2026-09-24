@@ -1,8 +1,8 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from "react-router";
-import { api, ApiError } from "./api/client";
+import { api, ApiError } from "@banking/web-shared/client";
 import type { BffUser } from "./api/types";
-import { ErrorState, Loading } from "./components/States";
-import { useResource } from "./lib/useResource";
+import { ErrorState, Loading } from "@banking/web-shared/States";
+import { useResource } from "@banking/web-shared/useResource";
 import { SessionContext, toSession, useSession } from "./session";
 import { Approvals } from "./views/Approvals";
 import { Audit } from "./views/Audit";

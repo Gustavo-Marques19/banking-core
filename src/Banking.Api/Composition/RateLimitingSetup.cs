@@ -15,6 +15,9 @@ public sealed class RateLimitingOptions
     public int TokensPerPeriod { get; set; } = 10;
 
     public TimeSpan ReplenishmentPeriod { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>Buscas de conta de destino por usuário a cada minuto (threat model T22).</summary>
+    public int LookupsPerMinute { get; set; } = 20;
 }
 
 /// <summary>
@@ -23,6 +26,8 @@ public sealed class RateLimitingOptions
 /// </summary>
 internal static class RateLimitingSetup
 {
+    public const string LookupPolicy = "account-lookup";
+
     public static IServiceCollection AddBankingRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
         var options = configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>() ?? new RateLimitingOptions();
@@ -49,6 +54,16 @@ internal static class RateLimitingSetup
                     AutoReplenishment = true,
                 });
             });
+
+            // Soma-se ao limite global: a busca devolve dado de outro cliente, então o teto é bem menor.
+            limiter.AddPolicy(LookupPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+                $"sub:{http.User.FindFirst("sub")?.Value}",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.LookupsPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
 
             limiter.OnRejected = async (context, cancellationToken) =>
             {

@@ -127,7 +127,7 @@ test("auditoria mostra a trilha de uma operação", async ({ page, request }) =>
 
   await login(page, "otto");
   await page.getByRole("link", { name: "Auditoria" }).click();
-  await page.getByLabel("Id do recurso").fill(deposit.id);
+  await page.getByLabel("Código da operação ou id do lançamento").fill(deposit.id);
   await page.getByRole("button", { name: "Buscar" }).click();
 
   await expect(page.getByRole("cell", { name: "deposit.create" })).toBeVisible();

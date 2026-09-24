@@ -140,7 +140,7 @@ public sealed class BffTests(PostgresFixture postgres, KeycloakFixture keycloak)
         var login = await browser.GetAsync("/bff/login?returnUrl=/", Ct);
         Assert.Equal(HttpStatusCode.Found, login.StatusCode);
 
-        using var keycloakBrowser = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true });
+        using var keycloakBrowser = KeycloakFixture.NewBrowser();
         var callback = await KeycloakFixture.SubmitLoginFormAsync(keycloakBrowser, login.Headers.Location!, username);
         Assert.Equal("localhost", callback.Host);
 

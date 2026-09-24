@@ -43,6 +43,13 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("access_token").GetString()!;
     }
 
+    /// <summary>
+    /// Cliente que se comporta como navegador diante do Keycloak em http: o Keycloak marca os cookies de login como
+    /// Secure, que um navegador aceita em localhost, mas o CookieContainer do .NET não devolve em http.
+    /// </summary>
+    public static HttpClient NewBrowser() =>
+        new(new CookieJarHandler(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false }));
+
     /// <summary>Preenche o formulário de login do Keycloak como um navegador e devolve para onde ele redireciona.</summary>
     public static async Task<Uri> SubmitLoginFormAsync(HttpClient browser, Uri authorizeUrl, string username)
     {
@@ -81,4 +88,37 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
 
     [GeneratedRegex("action=\"([^\"]+)\"")]
     private static partial Regex FormAction();
+
+    private sealed class CookieJarHandler(HttpMessageHandler inner) : DelegatingHandler(inner)
+    {
+        private readonly Dictionary<string, string> _jar = new(StringComparer.Ordinal);
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (_jar.Count > 0)
+            {
+                request.Headers.Add("Cookie", string.Join("; ", _jar.Select(c => $"{c.Key}={c.Value}")));
+            }
+
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            {
+                foreach (var cookie in cookies)
+                {
+                    var pair = cookie.Split(';', 2)[0].Split('=', 2);
+                    var expired = cookie.Contains("Max-Age=0", StringComparison.OrdinalIgnoreCase);
+                    if (pair.Length < 2 || pair[1].Length == 0 || expired)
+                    {
+                        _jar.Remove(pair[0]);
+                    }
+                    else
+                    {
+                        _jar[pair[0]] = pair[1];
+                    }
+                }
+            }
+
+            return response;
+        }
+    }
 }

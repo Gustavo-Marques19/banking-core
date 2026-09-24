@@ -1,0 +1,29 @@
+{
+  "realm": "banking",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "customer", "description": "Dono de contas. Movimenta só as próprias." },
+      { "name": "operator", "description": "Faz depósitos de dinheiro fictício, com limite." },
+      { "name": "admin", "description": "Configura o mock do provider em desenvolvimento." }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "banking-api",
+      "name": "Banking API",
+      "description": "Representa a API como audience dos tokens. Não inicia login.",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    }
+  ]
+}

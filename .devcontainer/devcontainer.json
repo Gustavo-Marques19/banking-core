@@ -1,0 +1,29 @@
+{
+  "name": "banking-core",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  },
+  "forwardPorts": [5080, "keycloak:8080", "postgres:5432"],
+  "portsAttributes": {
+    "5080": { "label": "Banking API", "onAutoForward": "notify" },
+    "keycloak:8080": { "label": "Keycloak", "onAutoForward": "silent" },
+    "postgres:5432": { "label": "Postgres", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-ossdata.vscode-pgsql"
+      ]
+    }
+  }
+}

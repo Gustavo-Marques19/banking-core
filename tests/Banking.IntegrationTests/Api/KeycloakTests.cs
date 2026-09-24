@@ -53,6 +53,33 @@ public sealed class KeycloakTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, operatorCallsOperatorEndpoint.StatusCode);
     }
 
+    [Fact]
+    public async Task Cliente_do_backoffice_exige_pkce_e_nao_aceita_password_grant()
+    {
+        var authority = new Uri(new Uri(_keycloak.GetBaseAddress()), "realms/banking").ToString();
+        using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+
+        var withoutPkce = await http.GetAsync(
+            $"{authority}/protocol/openid-connect/auth?client_id=banking-backoffice&response_type=code&scope=openid"
+            + "&redirect_uri=" + Uri.EscapeDataString("http://localhost:5180/signin-oidc"),
+            Ct);
+        var passwordGrant = await http.PostAsync(
+            $"{authority}/protocol/openid-connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "password",
+                ["client_id"] = "banking-backoffice",
+                ["client_secret"] = "backoffice-dev-only",
+                ["username"] = "olga",
+                ["password"] = "olga-dev-only",
+            }),
+            Ct);
+
+        Assert.Equal(HttpStatusCode.Found, withoutPkce.StatusCode);
+        Assert.Contains("code_challenge", Uri.UnescapeDataString(withoutPkce.Headers.Location!.Query), StringComparison.Ordinal);
+        Assert.False(passwordGrant.IsSuccessStatusCode);
+    }
+
     private static async Task<string> PasswordGrantAsync(string authority, string username)
     {
         using var http = new HttpClient();

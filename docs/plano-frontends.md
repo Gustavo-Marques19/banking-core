@@ -12,10 +12,10 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 ## Marcos
 
 ### F1: preparar o backend
-- [ ] Listagens para as filas do operador: depósitos pendentes, estornos pendentes, transferências externas em revisão manual.
-- [ ] Resolução manual de transferência externa em UNKNOWN, com maker-checker: um operador registra o desfecho confirmado com o provider e a evidência, outro aprova. Hoje o M6 marca a revisão, mas não existe como concluí-la.
-- [ ] Cliente `banking-backoffice` no Keycloak (authorization code com PKCE, confidencial, usado pelo BFF).
-- [ ] Hostname do Keycloak: o endereço que o navegador vê é diferente do que a API usa (ADR-009). Emissor fixo e metadados pelo endereço interno.
+- [x] Listagens para as filas do operador: depósitos pendentes, estornos pendentes, transferências externas em revisão manual.
+- [x] Resolução manual de transferência externa em UNKNOWN, com maker-checker: um operador registra o desfecho confirmado com o provider e a evidência, outro aprova. Hoje o M6 marca a revisão, mas não existe como concluí-la.
+- [x] Cliente `banking-backoffice` no Keycloak (authorization code com PKCE, confidencial, usado pelo BFF).
+- [x] Hostname do Keycloak: o endereço que o navegador vê é diferente do que a API usa (ADR-009). Emissor fixo e metadados pelo endereço interno: `KC_HOSTNAME` com o endereço público e `KC_HOSTNAME_BACKCHANNEL_DYNAMIC`. No Codespaces, `scripts/devcontainer-init.sh` descobre a URL encaminhada; esse caminho não foi verificado num Codespace real.
 
 ### F2: BFF do backoffice
 - [ ] Login OIDC, sessão por cookie, logout.

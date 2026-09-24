@@ -252,6 +252,80 @@ public sealed class ExternalTransferTests(PostgresFixture postgres) : IAsyncLife
             f => f.GetProperty("check").GetString() == "settlement_missing_in_ledger");
     }
 
+    [Fact]
+    public async Task Resolucao_manual_de_falha_estorna_com_aprovacao_de_outro_operador()
+    {
+        await using var api = Api();
+        var (bank, alice, account) = await FundedAsync(api, "500.00");
+        var id = await ReachManualReviewAsync(bank, alice, account);
+        var checker = TestUser.NewOperator();
+
+        var queue = await TestBank.ReadAsync(await bank.Client(bank.Operator).GetAsync("/api/v1/operations/external-transfers-in-review", Ct));
+        Assert.Contains(queue.EnumerateArray(), t => t.GetProperty("id").GetGuid() == id);
+
+        var requested = await bank.Client(bank.Operator).PostAsJsonAsync(
+            $"/api/v1/external-transfers/{id}/manual-resolutions", new { outcome = "failed", evidence = "Provider confirmou por e-mail que não recebeu a ordem." }, Ct);
+        Assert.Equal(HttpStatusCode.Accepted, requested.StatusCode);
+        var resolutionId = (await TestBank.ReadAsync(requested)).GetProperty("id").GetGuid();
+
+        var selfApproval = await bank.Client(bank.Operator).PostAsync($"/api/v1/manual-resolutions/{resolutionId}/approve", null, Ct);
+        var approved = await bank.Client(checker).PostAsync($"/api/v1/manual-resolutions/{resolutionId}/approve", null, Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, selfApproval.StatusCode);
+        await TestBank.EnsureStatusAsync(approved, HttpStatusCode.OK);
+        var view = await GetAsync(bank, alice, id);
+        Assert.Equal("failed", view.GetProperty("status").GetString());
+        Assert.False(view.GetProperty("requiresManualReview").GetBoolean());
+        Assert.Equal("500.00", await bank.BalanceAsync(alice, account));
+        var after = await TestBank.ReadAsync(await bank.Client(bank.Operator).GetAsync("/api/v1/operations/external-transfers-in-review", Ct));
+        Assert.DoesNotContain(after.EnumerateArray(), t => t.GetProperty("id").GetGuid() == id);
+        await AssertReconciledAsync(bank);
+    }
+
+    [Fact]
+    public async Task Resolucao_manual_de_sucesso_liquida_uma_vez()
+    {
+        await using var api = Api();
+        var (bank, alice, account) = await FundedAsync(api, "500.00");
+        var id = await ReachManualReviewAsync(bank, alice, account);
+
+        var requested = await bank.Client(bank.Operator).PostAsJsonAsync(
+            $"/api/v1/external-transfers/{id}/manual-resolutions", new { outcome = "completed", evidence = "Comprovante do provider anexado ao chamado 123." }, Ct);
+        var resolutionId = (await TestBank.ReadAsync(requested)).GetProperty("id").GetGuid();
+        var duplicate = await bank.Client(bank.Operator).PostAsJsonAsync(
+            $"/api/v1/external-transfers/{id}/manual-resolutions", new { outcome = "failed", evidence = "de novo" }, Ct);
+        await TestBank.EnsureStatusAsync(
+            await bank.Client(TestUser.NewOperator()).PostAsync($"/api/v1/manual-resolutions/{resolutionId}/approve", null, Ct), HttpStatusCode.OK);
+
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        Assert.Equal("completed", (await GetAsync(bank, alice, id)).GetProperty("status").GetString());
+        Assert.Equal("300.00", await bank.BalanceAsync(alice, account));
+        Assert.Equal(1L, await CountAsync("SELECT count(*) FROM ledger.ledger_transactions WHERE external_id = @e", Resolution(id)));
+    }
+
+    [Fact]
+    public async Task Resolucao_manual_so_para_transferencia_em_revisao()
+    {
+        await using var api = Api();
+        var (bank, alice, account) = await FundedAsync(api, "500.00");
+        var id = await CreateAsync(bank, alice, account, "10.00", "SUCCESS-8");
+        await WaitForStatusAsync(bank, alice, id, "completed");
+
+        var response = await bank.Client(bank.Operator).PostAsJsonAsync(
+            $"/api/v1/external-transfers/{id}/manual-resolutions", new { outcome = "failed", evidence = "tentativa indevida" }, Ct);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("not_in_manual_review", (await TestBank.ReadAsync(response)).GetProperty("code").GetString());
+    }
+
+    private static async Task<Guid> ReachManualReviewAsync(TestBank bank, TestUser user, Guid account)
+    {
+        var id = await CreateAsync(bank, user, account, "200.00", "TIMEOUT-" + Guid.NewGuid().ToString("N")[..6]);
+        await Eventually.TrueAsync(
+            async () => (await GetAsync(bank, user, id)).GetProperty("requiresManualReview").GetBoolean(), "revisão manual");
+        return id;
+    }
+
     private ApiFactory Api(bool worker = true) => new(
         _database.AppConnectionString,
         new Dictionary<string, string?>

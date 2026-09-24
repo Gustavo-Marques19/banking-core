@@ -234,6 +234,33 @@ public sealed class ExternalTransfer
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Desfecho confirmado fora do fluxo automático (ver <see cref="ManualResolution"/>). Só para transferência em revisão.
+    /// </summary>
+    public LedgerTransaction ResolveManually(ManualOutcome outcome, LedgerTransaction reservation, DateTimeOffset now)
+    {
+        if (!RequiresManualReview || IsTerminal)
+        {
+            throw new DomainException("not_in_manual_review", "A transferência não está esperando revisão manual.");
+        }
+
+        RequiresManualReview = false;
+        UpdatedAt = now;
+        if (outcome == ManualOutcome.Failed)
+        {
+            return Fail("manual_resolution", reservation, now);
+        }
+
+        Status = ExternalTransferStatus.Completed;
+        NextCheckAt = null;
+        return LedgerTransaction.Create(
+            ResolutionExternalId,
+            LedgerTransactionType.ExternalTransferSettlement,
+            "Liquidação de transferência externa (resolução manual)",
+            now,
+            [PostingLine.Debit(SystemLedgerAccounts.Clearing, Amount), PostingLine.Credit(SystemLedgerAccounts.Settlement, Amount)]);
+    }
+
     public void ScheduleCheck(DateTimeOffset at)
     {
         if (!IsTerminal)

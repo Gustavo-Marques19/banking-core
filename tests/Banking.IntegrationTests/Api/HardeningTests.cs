@@ -38,6 +38,19 @@ public sealed class HardeningTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Fila_de_depositos_pendentes_mostra_o_pedido_so_para_operador()
+    {
+        var (user, account) = await _bank.NewAccountAsync();
+        var depositId = (await TestBank.ReadAsync(await _bank.DepositAsync(account, "15000.00"))).GetProperty("id").GetGuid();
+
+        var queue = await TestBank.ReadAsync(await _bank.Client(TestUser.NewOperator()).GetAsync("/api/v1/operations/pending-deposits", Ct));
+        var asCustomer = await _bank.Client(user).GetAsync("/api/v1/operations/pending-deposits", Ct);
+
+        Assert.Contains(queue.EnumerateArray(), d => d.GetProperty("id").GetGuid() == depositId);
+        Assert.Equal(HttpStatusCode.Forbidden, asCustomer.StatusCode);
+    }
+
+    [Fact]
     public async Task Deposito_recusado_pelo_aprovador_nao_cria_dinheiro()
     {
         var (user, account) = await _bank.NewAccountAsync();

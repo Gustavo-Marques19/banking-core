@@ -67,6 +67,13 @@ internal sealed class ExternalTransferRepository(BankingDbContext db) : IExterna
             .Select(t => t.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<ExternalTransfer>> ListNeedingReviewAsync(int limit, CancellationToken cancellationToken) =>
+        await db.Set<ExternalTransfer>().AsNoTracking()
+            .Where(t => t.RequiresManualReview)
+            .OrderBy(t => t.UpdatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
     /// <summary>Com a linha já travada, garante que a entidade rastreada reflete o banco, e não uma leitura antiga.</summary>
     private async Task<ExternalTransfer?> LoadCurrentAsync(Guid id, CancellationToken cancellationToken)
     {

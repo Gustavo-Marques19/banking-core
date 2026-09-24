@@ -37,6 +37,8 @@ public interface IDepositRepository
 
     /// <summary>Trava a linha até o fim da transação e devolve o estado atual.</summary>
     Task<Deposit?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Deposit>> ListByStatusAsync(DepositStatus status, int limit, CancellationToken cancellationToken);
 }
 
 public interface ITransferReversalRepository
@@ -46,6 +48,19 @@ public interface ITransferReversalRepository
     Task<TransferReversal?> GetAsync(Guid id, CancellationToken cancellationToken);
 
     Task<TransferReversal?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<TransferReversal>> ListByStatusAsync(ReversalStatus status, int limit, CancellationToken cancellationToken);
+}
+
+public interface IManualResolutionRepository
+{
+    void Add(ManualResolution resolution);
+
+    Task<ManualResolution?> GetAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<ManualResolution?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ManualResolution>> ListByStatusAsync(ManualResolutionStatus status, int limit, CancellationToken cancellationToken);
 }
 
 public interface ITransferRepository

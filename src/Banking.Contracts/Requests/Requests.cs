@@ -24,3 +24,6 @@ public sealed record ProviderWebhookRequest(Guid EventId, string ClientReference
 public sealed record ProviderScenarioRequest(string Scenario);
 
 public sealed record ReversalRequest(string Reason);
+
+/// <summary>Desfecho confirmado com o provider por outro canal: "completed" ou "failed", com a evidência.</summary>
+public sealed record ManualResolutionRequest(string Outcome, string Evidence);

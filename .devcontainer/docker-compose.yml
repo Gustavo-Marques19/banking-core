@@ -50,6 +50,9 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-only}
       KC_HEALTH_ENABLED: "true"
+      # Emissor fixo no endereço que o navegador vê; quem chama pelo endereço interno (API, BFF) recebe URLs internas.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
 

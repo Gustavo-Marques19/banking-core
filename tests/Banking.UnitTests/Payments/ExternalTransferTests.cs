@@ -133,3 +133,51 @@ public sealed class ExternalTransferTests
 
     private static Money Brl(long minor) => Money.FromMinor(minor, Currency.Brl);
 }
+
+public sealed class ManualResolutionTests
+{
+    private static readonly TransferLimits Limits = new(Money.FromMinor(20_000_00, Currency.Brl), Money.FromMinor(50_000_00, Currency.Brl));
+
+    [Fact]
+    public void So_transferencia_em_revisao_aceita_resolucao()
+    {
+        var (transfer, _) = Create();
+
+        var error = Assert.Throws<DomainException>(() =>
+            ManualResolution.Request(transfer, ManualOutcome.Failed, "evidência", "maker", TestCustomers.Now));
+
+        Assert.Equal("not_in_manual_review", error.Code);
+    }
+
+    [Fact]
+    public void Aprovacao_por_outro_operador_estorna_e_sai_da_revisao()
+    {
+        var (transfer, reservation) = Create();
+        transfer.MarkSubmitting(TestCustomers.Now, TimeSpan.FromSeconds(1));
+        transfer.FlagForManualReview(TestCustomers.Now);
+        var resolution = ManualResolution.Request(transfer, ManualOutcome.Failed, "provider confirmou", "maker", TestCustomers.Now);
+
+        Assert.Throws<DomainException>(() => resolution.Approve("maker", transfer, reservation!, TestCustomers.Now));
+        var reversal = resolution.Approve("checker", transfer, reservation!, TestCustomers.Now);
+
+        Assert.Equal(ExternalTransferStatus.Failed, transfer.Status);
+        Assert.False(transfer.RequiresManualReview);
+        Assert.Equal(reservation!.Id, reversal.ReversesTransactionId);
+        Assert.Equal(ManualResolutionStatus.Applied, resolution.Status);
+    }
+
+    private static (ExternalTransfer Transfer, LedgerTransaction? Reservation) Create()
+    {
+        var account = Account.Open(TestCustomers.Active(), 1, Currency.Brl, TestCustomers.Now).Account;
+        return ExternalTransfer.Create(
+            account,
+            new LedgerBalance(account.LedgerAccountId, Money.FromMinor(1_000_00, Currency.Brl), EntryDirection.Credit, false),
+            Money.FromMinor(100_00, Currency.Brl),
+            new ExternalDestination("00000000", "0001", "12345"),
+            "sub",
+            "key",
+            Money.FromMinor(0, Currency.Brl),
+            Limits,
+            TestCustomers.Now);
+    }
+}

@@ -38,5 +38,5 @@ A spec original não tinha autenticação nem autorização: qualquer pessoa com
 ## Consequências
 
 - Os testes de integração emitem tokens com uma chave própria, usando a mesma validação de produção. Um teste separado usa um Keycloak real (Testcontainers) com o realm versionado.
-- No devcontainer, tokens são pedidos e validados pelo endereço interno `http://keycloak:8080`, para o `iss` bater. Acesso pelo navegador via porta encaminhada exigiria configurar `KC_HOSTNAME`.
+- No devcontainer, o emissor é fixo no endereço que o navegador vê (`KC_HOSTNAME`), e quem chama pelo endereço interno recebe URLs internas (`KC_HOSTNAME_BACKCHANNEL_DYNAMIC`). A API busca os metadados em `http://keycloak:8080` e valida o `iss` público. (Ajuste do F1, para o login pelo navegador do backoffice.)
 - O cliente `banking-cli` usa password grant, que é só para desenvolvimento. Um front-end real usaria authorization code com PKCE.

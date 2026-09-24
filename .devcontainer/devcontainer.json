@@ -17,7 +17,7 @@
     "keycloak:8080": { "label": "Keycloak", "onAutoForward": "silent" },
     "postgres:5432": { "label": "Postgres", "onAutoForward": "silent" }
   },
-  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh",
+  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh && ./scripts/dev-secrets.sh",
   "customizations": {
     "vscode": {
       "extensions": [

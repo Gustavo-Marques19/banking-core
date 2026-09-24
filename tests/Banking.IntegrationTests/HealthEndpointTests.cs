@@ -1,5 +1,5 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Banking.IntegrationTests.Support;
 using Xunit;
 
 namespace Banking.IntegrationTests;
@@ -12,7 +12,9 @@ public sealed class HealthEndpointTests(PostgresFixture postgres)
     [Fact]
     public async Task Health_responde_200_mesmo_sem_banco()
     {
-        var response = await GetAsync(UnreachableDatabase, "/health");
+        await using var api = new ApiFactory(UnreachableDatabase);
+
+        var response = await api.CreateClient().GetAsync("/health", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -20,7 +22,7 @@ public sealed class HealthEndpointTests(PostgresFixture postgres)
     [Fact]
     public async Task Ready_responde_200_com_banco_disponivel()
     {
-        var response = await GetAsync(postgres.AppConnectionString, "/ready");
+        var response = await postgres.Api.CreateClient().GetAsync("/ready", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -28,17 +30,10 @@ public sealed class HealthEndpointTests(PostgresFixture postgres)
     [Fact]
     public async Task Ready_responde_503_sem_banco()
     {
-        var response = await GetAsync(UnreachableDatabase, "/ready");
+        await using var api = new ApiFactory(UnreachableDatabase);
+
+        var response = await api.CreateClient().GetAsync("/ready", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-    }
-
-    private static async Task<HttpResponseMessage> GetAsync(string connectionString, string path)
-    {
-        await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseSetting("ConnectionStrings:Banking", connectionString));
-        using var client = factory.CreateClient();
-
-        return await client.GetAsync(path, TestContext.Current.CancellationToken);
     }
 }

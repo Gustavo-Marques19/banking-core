@@ -3,24 +3,28 @@ using Banking.Domain.Common;
 using Banking.Domain.Ledger;
 using Banking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Npgsql;
 
 namespace Banking.Infrastructure.Ledger;
 
 internal sealed class LedgerRepository(BankingDbContext db) : ILedger
 {
-    public async Task<IReadOnlyDictionary<Guid, LedgerBalance>> LockBalancesAsync(
+    public Task<IReadOnlyDictionary<Guid, LedgerBalance>> LockBalancesAsync(
         IReadOnlyCollection<Guid> ledgerAccountIds, CancellationToken cancellationToken)
     {
-        var transaction = db.Database.CurrentTransaction?.GetDbTransaction() as NpgsqlTransaction
-            ?? throw new InvalidOperationException("Lock de saldo exige uma transação aberta.");
+        if (db.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException("Lock de saldo exige uma transação aberta.");
+        }
 
+        return PostgresErrors.TranslateAsync(() => LockAsync(ledgerAccountIds, cancellationToken));
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, LedgerBalance>> LockAsync(
+        IReadOnlyCollection<Guid> ledgerAccountIds, CancellationToken cancellationToken)
+    {
         // A função é SECURITY DEFINER: a role da aplicação trava as linhas sem ter UPDATE na tabela (ADR-008).
-        await using var command = new NpgsqlCommand(
-            "SELECT ledger_account_id, currency, normal_balance, balance_minor, allow_negative FROM ledger.lock_balances(@ids)",
-            transaction.Connection,
-            transaction);
+        await using var command = DbCommands.InTransaction(
+            db, "SELECT ledger_account_id, currency, normal_balance, balance_minor, allow_negative FROM ledger.lock_balances(@ids)");
         command.Parameters.AddWithValue("ids", ledgerAccountIds.Distinct().ToArray());
 
         var balances = new Dictionary<Guid, LedgerBalance>();

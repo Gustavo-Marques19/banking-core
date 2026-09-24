@@ -1,5 +1,6 @@
 using Banking.Infrastructure.Persistence;
 using Banking.IntegrationTests;
+using Banking.IntegrationTests.Support;
 using DotNet.Testcontainers.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -21,6 +22,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     private readonly string _migratorPassword = Guid.NewGuid().ToString("N");
     private readonly string _appPassword = Guid.NewGuid().ToString("N");
     private readonly PostgreSqlContainer _container;
+    private readonly Lazy<ApiFactory> _api;
 
     public PostgresFixture()
     {
@@ -34,7 +36,13 @@ public sealed class PostgresFixture : IAsyncLifetime
                     | UnixFileModes.GroupRead | UnixFileModes.GroupExecute
                     | UnixFileModes.OtherRead | UnixFileModes.OtherExecute)
             .Build();
+        _api = new Lazy<ApiFactory>(() => new ApiFactory(AppConnectionString));
     }
+
+    /// <summary>API compartilhada pelos testes que não precisam de configuração própria.</summary>
+    public ApiFactory Api => _api.Value;
+
+    public ApiFactory CreateApi(IReadOnlyDictionary<string, string?> settings) => new(AppConnectionString, settings);
 
     public string MigratorConnectionString => ConnectionStringFor(DatabaseRoles.Migrator, _migratorPassword);
 
@@ -54,7 +62,15 @@ public sealed class PostgresFixture : IAsyncLifetime
         await db.Database.MigrateAsync();
     }
 
-    public ValueTask DisposeAsync() => _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_api.IsValueCreated)
+        {
+            await _api.Value.DisposeAsync();
+        }
+
+        await _container.DisposeAsync();
+    }
 
     private string ConnectionStringFor(string username, string password) =>
         new NpgsqlConnectionStringBuilder(_container.GetConnectionString())

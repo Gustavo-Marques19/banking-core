@@ -51,3 +51,7 @@ public sealed record ExternalTransferCancelledV1(Guid ExternalTransferId, Guid S
 
 [EventType("ExternalTransferNeedsReview", 1)]
 public sealed record ExternalTransferNeedsReviewV1(Guid ExternalTransferId, Guid SourceAccountId, int SubmitAttempts);
+
+[EventType("TransferReversed", 1)]
+public sealed record TransferReversedV1(
+    Guid TransferId, Guid ReversalId, Guid SourceAccountId, Guid DestinationAccountId, string Amount, string Currency);

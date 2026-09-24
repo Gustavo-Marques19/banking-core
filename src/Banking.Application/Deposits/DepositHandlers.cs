@@ -17,6 +17,7 @@ public sealed record DepositView(
     string Status,
     string? RejectionReason,
     string RequestedBy,
+    string? DecidedBy,
     DateTimeOffset CreatedAt)
 {
     public static DepositView From(Deposit deposit) => new(
@@ -28,6 +29,7 @@ public sealed record DepositView(
         Codes.Of(deposit.Status),
         Codes.Of(deposit.RejectionReason),
         deposit.RequestedBy,
+        deposit.DecidedBy,
         deposit.CreatedAt);
 }
 
@@ -141,4 +143,84 @@ public sealed class MakeDepositHandler(
 
     private static string Outcome(DepositStatus status, RejectionReason? reason) =>
         reason is null ? Codes.Of(status) : $"{Codes.Of(status)}:{Codes.Of(reason)}";
+}
+
+/// <summary>Maker-checker do depósito acima do limite de aprovação: outro operador decide (threat model T4).</summary>
+public sealed class DepositApprovalHandler(
+    IUnitOfWork unitOfWork,
+    IDepositRepository deposits,
+    IAccountRepository accounts,
+    ILedger ledger,
+    ILimitUsageStore limitUsage,
+    IOutbox outbox,
+    IAuditTrail audit,
+    DepositLimits limits,
+    TimeProvider time)
+{
+    public Task<Result<DepositView>> ApproveAsync(Actor actor, Guid depositId, CancellationToken cancellationToken) =>
+        DecideAsync(actor, depositId, approve: true, cancellationToken);
+
+    public Task<Result<DepositView>> RejectAsync(Actor actor, Guid depositId, CancellationToken cancellationToken) =>
+        DecideAsync(actor, depositId, approve: false, cancellationToken);
+
+    private async Task<Result<DepositView>> DecideAsync(Actor actor, Guid depositId, bool approve, CancellationToken cancellationToken)
+    {
+        if (!actor.IsOperator)
+        {
+            return Error.NotFound("Depósito");
+        }
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        var deposit = await deposits.FindForUpdateAsync(depositId, cancellationToken);
+        if (deposit is null)
+        {
+            return Error.NotFound("Depósito");
+        }
+
+        var account = await accounts.FindAsync(deposit.AccountId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conta {deposit.AccountId} não encontrada.");
+        await ledger.LockBalancesAsync([account.LedgerAccountId], cancellationToken);
+        await accounts.RefreshAsync(account, cancellationToken);
+
+        var now = time.GetUtcNow();
+        var today = BusinessCalendar.DateOf(now);
+        try
+        {
+            if (approve)
+            {
+                var usedToday = await limitUsage.LockUsageAsync(LimitKind.DepositPerOperator, deposit.RequestedBy, today, deposit.Amount.Currency, cancellationToken);
+                var posting = deposit.Approve(actor.Subject, account, usedToday, limits, now);
+                if (posting is not null)
+                {
+                    ledger.Add(posting);
+                    await limitUsage.AddUsageAsync(LimitKind.DepositPerOperator, deposit.RequestedBy, today, deposit.Amount, cancellationToken);
+                    outbox.Enqueue(
+                        new MoneyDepositedV1(deposit.Id, account.Id, deposit.Amount.ToDecimalString(), deposit.CurrencyCode, posting.Id), now);
+                }
+            }
+            else
+            {
+                deposit.Reject(actor.Subject, now);
+            }
+        }
+        catch (DomainException error) when (error.Code == "self_approval_not_allowed")
+        {
+            return Error.Forbidden(error.Code, error.Message);
+        }
+        catch (DomainException error)
+        {
+            return Error.Conflict(error.Code, error.Message);
+        }
+
+        audit.Record(AuditEntry.Of(
+            actor,
+            approve ? "deposit.approve" : "deposit.reject",
+            "deposit",
+            deposit.Id,
+            deposit.RejectionReason is { } reason ? $"{Codes.Of(deposit.Status)}:{Codes.Of(reason)}" : Codes.Of(deposit.Status),
+            ("requestedBy", deposit.RequestedBy)));
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return DepositView.From(deposit);
+    }
 }

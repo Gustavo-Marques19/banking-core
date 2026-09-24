@@ -32,6 +32,7 @@ builder.Services.Configure<OperationsOptions>(builder.Configuration.GetSection(O
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddBankingApplication(builder.Configuration);
 builder.Services.AddBankingAuthentication(builder.Configuration);
+builder.Services.AddBankingRateLimiting(builder.Configuration);
 
 var app = builder.Build();
 
@@ -42,6 +43,7 @@ app.UseMiddleware<CorrelationMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())

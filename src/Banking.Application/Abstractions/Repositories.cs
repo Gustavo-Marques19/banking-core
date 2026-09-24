@@ -34,6 +34,18 @@ public interface IDepositRepository
     void Add(Deposit deposit);
 
     Task<Deposit?> FindAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Trava a linha até o fim da transação e devolve o estado atual.</summary>
+    Task<Deposit?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+}
+
+public interface ITransferReversalRepository
+{
+    void Add(TransferReversal reversal);
+
+    Task<TransferReversal?> GetAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<TransferReversal?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
 }
 
 public interface ITransferRepository

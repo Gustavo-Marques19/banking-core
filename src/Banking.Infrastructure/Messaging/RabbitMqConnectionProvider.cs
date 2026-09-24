@@ -24,7 +24,23 @@ public sealed class RabbitMqConnectionProvider(IOptions<MessagingOptions> option
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(Options.ConnectTimeout);
-        var connection = await factory.CreateConnectionAsync(timeout.Token);
+
+        // O handshake com um broker congelado nem sempre respeita o cancelamento; o prazo é imposto aqui.
+        var connecting = factory.CreateConnectionAsync(timeout.Token);
+        IConnection connection;
+        try
+        {
+            connection = await connecting.WaitAsync(Options.ConnectTimeout, cancellationToken);
+        }
+        catch (Exception) when (!connecting.IsCompleted)
+        {
+            _ = connecting.ContinueWith(
+                t => t.IsCompletedSuccessfully ? AbortQuietlyAsync(t.Result) : Task.CompletedTask,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            throw;
+        }
 
         try
         {

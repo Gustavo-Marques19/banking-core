@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 namespace Banking.Infrastructure.Messaging;
 
@@ -37,8 +38,13 @@ internal sealed class RabbitMqPublisher(RabbitMqConnectionProvider connections, 
                 Headers = message.TraceParent is null ? null : new Dictionary<string, object?> { ["traceparent"] = message.TraceParent },
             };
 
+            // mandatory: sem fila ligada, o broker devolve a mensagem e ela continua pendente no outbox, em vez de sumir.
             await channel.BasicPublishAsync(
-                options.Value.Exchange, message.RoutingKey, mandatory: false, properties, Encoding.UTF8.GetBytes(message.Payload), timeout.Token);
+                options.Value.Exchange, message.RoutingKey, mandatory: true, properties, Encoding.UTF8.GetBytes(message.Payload), timeout.Token);
+        }
+        catch (PublishReturnException)
+        {
+            throw;
         }
         catch
         {

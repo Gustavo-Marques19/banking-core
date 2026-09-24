@@ -22,6 +22,7 @@ public sealed partial class OutboxPublisher(
 {
     private sealed record PendingMessage(Guid Id, string Type, string Payload, int Attempts, string? TraceParent);
 
+    /// <summary>Publica um lote e devolve quantas mensagens saíram. Zero faz o loop esperar antes do próximo ciclo.</summary>
     public async Task<int> PublishBatchAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -29,6 +30,7 @@ public sealed partial class OutboxPublisher(
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var pending = await LockPendingAsync(db, cancellationToken);
+        var published = 0;
         foreach (var message in pending)
         {
             try
@@ -36,15 +38,18 @@ public sealed partial class OutboxPublisher(
                 await publisher.PublishAsync(
                     new OutgoingMessage(message.Id, message.Type, message.Payload, message.TraceParent), cancellationToken);
                 await MarkPublishedAsync(db, message.Id, cancellationToken);
+                published++;
             }
             catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
+                // Broker provavelmente fora: registra a falha já e deixa o resto do lote para o próximo ciclo.
                 await MarkFailedAsync(db, message, error, cancellationToken);
+                break;
             }
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return pending.Count;
+        return published;
     }
 
     public async Task<int> DeletePublishedAsync(CancellationToken cancellationToken)
@@ -67,10 +72,10 @@ public sealed partial class OutboxPublisher(
         var nextCleanup = time.GetUtcNow();
         while (!stoppingToken.IsCancellationRequested)
         {
-            var processed = 0;
+            var published = 0;
             try
             {
-                processed = await PublishBatchAsync(stoppingToken);
+                published = await PublishBatchAsync(stoppingToken);
                 if (time.GetUtcNow() >= nextCleanup)
                 {
                     await DeletePublishedAsync(stoppingToken);
@@ -82,7 +87,7 @@ public sealed partial class OutboxPublisher(
                 LogBatchFailed(error);
             }
 
-            if (processed == 0)
+            if (published == 0)
             {
                 await Task.Delay(options.Value.PollInterval, time, stoppingToken);
             }

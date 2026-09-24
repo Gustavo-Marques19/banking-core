@@ -67,7 +67,7 @@ Sobe Postgres e RabbitMQ reais com Testcontainers, hospeda a API no processo e r
 ### No Codespaces
 
 1. Abra pelo botão acima. O ambiente sobe Postgres, Keycloak, RabbitMQ e o Aspire Dashboard, aplica as migrations e gera as chaves de desenvolvimento em user-secrets. Leva alguns minutos na primeira vez.
-2. No terminal, `./scripts/dev.sh` sobe a API e os dois fronts e mostra os endereços:
+2. No terminal, `./scripts/dev.sh` sobe a API e os dois fronts e mostra os endereços. As portas são privadas: só você, logado no GitHub, abre esses endereços. Na primeira visita a cada porta, o GitHub mostra um aviso sobre portas de desenvolvimento; clique em "Continue".
    - **App do cliente** (porta 5190): `alice`, `bruno` e `carla`. A `carla` ainda não tem cadastro e serve para ver a abertura de conta.
    - **Backoffice** (porta 5180): `olga` e `otto` (operadores) e `ada` (admin).
    - Senha de todo usuário: `<usuario>-dev-only`.

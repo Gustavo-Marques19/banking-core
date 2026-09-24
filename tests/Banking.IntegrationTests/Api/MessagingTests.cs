@@ -89,6 +89,7 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(("Pending", 0), await OutboxStateAsync(transferId));
 
         await using var restarted = Api();
+        restarted.StartServer();
         var afterRestart = new TestBank(restarted);
         await Eventually.TrueAsync(async () => await OutboxStateAsync(transferId) is ("Published", _), "evento publicado após o restart");
         await Eventually.TrueAsync(() => HasNotificationAsync(afterRestart, bruno, to, "transfer_received"), "notificação entregue após o restart");

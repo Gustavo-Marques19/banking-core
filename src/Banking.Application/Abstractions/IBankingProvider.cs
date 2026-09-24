@@ -37,6 +37,8 @@ public interface IExternalTransferRepository
     Task<IReadOnlyList<ExternalTransfer>> LockCreatedAsync(int limit, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Guid>> ListDueForCheckAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ExternalTransfer>> ListNeedingReviewAsync(int limit, CancellationToken cancellationToken);
 }
 
 public interface IInbox

@@ -8,6 +8,7 @@ using Banking.Application.Reversals;
 using Banking.Application.Idempotency;
 using Banking.Application.LedgerQueries;
 using Banking.Application.Notifications;
+using Banking.Application.Operations;
 using Banking.Application.Transfers;
 using Banking.Domain.Common;
 using Banking.Domain.Payments;
@@ -67,6 +68,8 @@ internal static class ApplicationSetup
         services.AddScoped<AuditHandler>();
         services.AddScoped<DepositApprovalHandler>();
         services.AddScoped<ReversalHandler>();
+        services.AddScoped<OperatorQueuesHandler>();
+        services.AddScoped<ManualResolutionHandler>();
         services.AddSingleton(new ExternalTransferSettings(
             configuration.GetValue("ExternalTransfers:CheckInterval", TimeSpan.FromSeconds(5)),
             configuration.GetValue("ExternalTransfers:MaxSubmitAttempts", 5)));

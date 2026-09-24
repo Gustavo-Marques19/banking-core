@@ -15,6 +15,13 @@ internal sealed class DepositRepository(BankingDbContext db) : IDepositRepositor
 
     public Task<Deposit?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
         RowLocks.FindForUpdateAsync<Deposit>(db, "payments.deposits", id, d => d.Id, cancellationToken);
+
+    public async Task<IReadOnlyList<Deposit>> ListByStatusAsync(DepositStatus status, int limit, CancellationToken cancellationToken) =>
+        await db.Set<Deposit>().AsNoTracking()
+            .Where(d => d.Status == status)
+            .OrderBy(d => d.CreatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
 }
 
 internal sealed class TransferReversalRepository(BankingDbContext db) : ITransferReversalRepository
@@ -26,6 +33,32 @@ internal sealed class TransferReversalRepository(BankingDbContext db) : ITransfe
 
     public Task<TransferReversal?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
         RowLocks.FindForUpdateAsync<TransferReversal>(db, "payments.transfer_reversals", id, r => r.Id, cancellationToken);
+
+    public async Task<IReadOnlyList<TransferReversal>> ListByStatusAsync(ReversalStatus status, int limit, CancellationToken cancellationToken) =>
+        await db.Set<TransferReversal>().AsNoTracking()
+            .Where(r => r.Status == status)
+            .OrderBy(r => r.CreatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+}
+
+internal sealed class ManualResolutionRepository(BankingDbContext db) : IManualResolutionRepository
+{
+    public void Add(ManualResolution resolution) => db.Add(resolution);
+
+    public Task<ManualResolution?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Set<ManualResolution>().AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+    public Task<ManualResolution?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
+        RowLocks.FindForUpdateAsync<ManualResolution>(db, "payments.manual_resolutions", id, r => r.Id, cancellationToken);
+
+    public async Task<IReadOnlyList<ManualResolution>> ListByStatusAsync(
+        ManualResolutionStatus status, int limit, CancellationToken cancellationToken) =>
+        await db.Set<ManualResolution>().AsNoTracking()
+            .Where(r => r.Status == status)
+            .OrderBy(r => r.CreatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
 }
 
 internal sealed class TransferRepository(BankingDbContext db) : ITransferRepository

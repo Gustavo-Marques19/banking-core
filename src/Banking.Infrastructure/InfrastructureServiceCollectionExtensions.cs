@@ -39,6 +39,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IDepositRepository, DepositRepository>();
         services.AddScoped<ITransferRepository, TransferRepository>();
         services.AddScoped<ITransferReversalRepository, TransferReversalRepository>();
+        services.AddScoped<IManualResolutionRepository, ManualResolutionRepository>();
         services.AddScoped<ILimitUsageStore, LimitUsageStore>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         services.AddSingleton<IDocumentProtector>(sp => new AesGcmDocumentProtector(sp.GetRequiredService<PiiOptions>()));

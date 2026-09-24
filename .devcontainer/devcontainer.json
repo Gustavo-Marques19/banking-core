@@ -2,6 +2,7 @@
   "name": "banking-core",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
+  "initializeCommand": "./scripts/devcontainer-init.sh",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
   "features": {

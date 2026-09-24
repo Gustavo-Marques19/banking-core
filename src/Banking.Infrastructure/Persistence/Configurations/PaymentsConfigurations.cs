@@ -105,6 +105,26 @@ internal sealed class TransferReversalConfiguration : IEntityTypeConfiguration<T
     }
 }
 
+internal sealed class ManualResolutionConfiguration : IEntityTypeConfiguration<ManualResolution>
+{
+    public void Configure(EntityTypeBuilder<ManualResolution> builder)
+    {
+        builder.ToTable("manual_resolutions", DatabaseSchemas.Payments);
+        builder.HasKey(r => r.Id);
+
+        // Uma resolução pendente por vez para a mesma transferência.
+        builder.HasIndex(r => r.ExternalTransferId).IsUnique().HasFilter("status = 'PendingApproval'");
+
+        builder.Property(r => r.Outcome).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.Evidence).HasMaxLength(500);
+        builder.Property(r => r.RequestedBy).HasMaxLength(100);
+        builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.DecidedBy).HasMaxLength(100);
+
+        builder.HasOne<ExternalTransfer>().WithMany().HasForeignKey(r => r.ExternalTransferId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 internal sealed class LimitUsageRecord
 {
     public string LimitKind { get; set; } = string.Empty;

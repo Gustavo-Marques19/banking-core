@@ -68,7 +68,8 @@ app.MapGroup("/api/v1")
     .MapDeposits()
     .MapTransfers()
     .MapExternalTransfers()
-    .MapAudit();
+    .MapAudit()
+    .MapOperations();
 
 app.MapProviderWebhook();
 app.MapMockProviderAdmin();

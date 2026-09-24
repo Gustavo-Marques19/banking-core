@@ -32,6 +32,24 @@ public sealed class TransferTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Codigo_da_operacao_no_extrato_leva_a_trilha_de_auditoria()
+    {
+        var (alice, from) = await _bank.NewAccountAsync("100.00");
+        var (bruno, to) = await _bank.NewAccountAsync();
+        var transferId = (await TestBank.ReadAsync(await Transfers.SendAsync(_bank, alice, from, to, "10.00"))).GetProperty("id").GetGuid();
+
+        var senderLine = (await TestBank.ReadAsync(await _bank.Client(alice).GetAsync($"/api/v1/accounts/{from}/transactions?limit=1", Ct)))
+            .GetProperty("lines")[0];
+        var receiverLine = (await TestBank.ReadAsync(await _bank.Client(bruno).GetAsync($"/api/v1/accounts/{to}/transactions?limit=1", Ct)))
+            .GetProperty("lines")[0];
+        var trail = await TestBank.ReadAsync(await _bank.Client(_bank.Operator).GetAsync($"/api/v1/admin/audit?resourceId={transferId}", Ct));
+
+        Assert.Equal(transferId, senderLine.GetProperty("operationId").GetGuid());
+        Assert.Equal(transferId, receiverLine.GetProperty("operationId").GetGuid());
+        Assert.Contains(trail.EnumerateArray(), e => e.GetProperty("operation").GetString() == "transfer.create");
+    }
+
+    [Fact]
     public async Task Saldo_insuficiente_e_recusado_e_gravado()
     {
         var (alice, from) = await _bank.NewAccountAsync("50.00");

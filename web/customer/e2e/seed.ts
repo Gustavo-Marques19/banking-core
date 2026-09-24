@@ -61,6 +61,12 @@ export async function balanceOf(request: APIRequestContext, username: string, ac
   return (await call(request, username, "GET", `/api/v1/accounts/${accountId}/balance`)).body.availableBalance as string;
 }
 
+/** Operações registradas na auditoria para um código, vistas pela operadora olga. */
+export async function auditedOperations(request: APIRequestContext, code: string): Promise<string[]> {
+  const response = await call(request, "olga", "GET", `/api/v1/admin/audit?resourceId=${code}`);
+  return (response.body as { operation: string }[]).map((entry) => entry.operation);
+}
+
 /** Soma em centavos, para comparar saldos sem passar dinheiro por número de ponto flutuante. */
 export function cents(amount: string): bigint {
   const [integer = "0", fraction = ""] = amount.split(".");

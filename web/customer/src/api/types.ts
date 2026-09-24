@@ -33,6 +33,8 @@ export interface BalanceView {
 
 export interface StatementLine {
   transactionId: string;
+  /** Código da operação (transferência, depósito...): o mesmo do comprovante e da auditoria. */
+  operationId: string | null;
   type: string;
   description: string;
   direction: "debit" | "credit";

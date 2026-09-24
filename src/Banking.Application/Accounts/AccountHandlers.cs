@@ -23,8 +23,9 @@ public sealed record AccountLookupView(Guid Id, string Branch, string Number, st
 /// <summary>Na Fase 1 os dois saldos são iguais: a reserva de transferência externa é lançamento, não hold (ADR-006).</summary>
 public sealed record BalanceView(Guid AccountId, string LedgerBalance, string AvailableBalance, string Currency, DateTimeOffset AsOf);
 
+/// <summary>OperationId é o código da operação (transferência, depósito...), o mesmo que a auditoria usa.</summary>
 public sealed record StatementLineView(
-    Guid TransactionId, string Type, string Description, string Direction, string Amount, string BalanceAfter, long Sequence, DateTimeOffset PostedAt);
+    Guid TransactionId, Guid? OperationId, string Type, string Description, string Direction, string Amount, string BalanceAfter, long Sequence, DateTimeOffset PostedAt);
 
 public sealed record StatementView(Guid AccountId, string Currency, IReadOnlyList<StatementLineView> Lines, long? NextCursor);
 
@@ -148,7 +149,7 @@ public sealed class AccountQueriesHandler(
             account.Id,
             account.CurrencyCode,
             [.. lines.Select(l => new StatementLineView(
-                l.TransactionId, l.Type, l.Description, l.Direction, l.Amount.ToDecimalString(), l.BalanceAfter.ToDecimalString(), l.Sequence, l.PostedAt))],
+                l.TransactionId, l.OperationId, l.Type, l.Description, l.Direction, l.Amount.ToDecimalString(), l.BalanceAfter.ToDecimalString(), l.Sequence, l.PostedAt))],
             next);
     }
 }

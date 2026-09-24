@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router";
 import type { ExternalTransferView } from "../api/types";
 import { describe, stepIndex, steps, terminal } from "../lib/externalStatus";
 import { messageFor } from "../lib/messages";
+import { OperationCode } from "../components/OperationCode";
 
 export const pollInterval = 2000;
 
@@ -108,6 +109,9 @@ export function ExternalTransferStatus() {
         </ol>
         )}
 
+        <p>
+          Código da transferência: <OperationCode code={transfer.id} />
+        </p>
         <p className="muted">
           Pedida em {formatDateTime(transfer.createdAt)}. Última mudança em {formatDateTime(transfer.updatedAt)}.
           {!done && " Esta tela se atualiza sozinha."}

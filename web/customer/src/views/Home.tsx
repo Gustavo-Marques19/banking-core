@@ -7,6 +7,7 @@ import { Link, useSearchParams } from "react-router";
 import type { BalanceView, StatementLine, StatementView } from "../api/types";
 import { accountLabel, useBank, useSelectedAccount } from "../bank";
 import { Money } from "../components/Money";
+import { OperationCode } from "../components/OperationCode";
 import { messageFor } from "../lib/messages";
 
 const pageSize = 20;
@@ -106,24 +107,41 @@ function Statement({ accountId }: { accountId: string }) {
       {lines.length === 0 ? (
         <Empty>Nenhuma movimentação ainda. Depósitos e transferências aparecem aqui assim que acontecem.</Empty>
       ) : (
-        <ul className="statement">
-          {lines.map((line) => (
-            <li key={line.sequence} className="statement__line">
-              <div className="statement__what">
-                <p>{line.description}</p>
-                <p className="muted">{formatDateTime(line.postedAt)}</p>
-              </div>
-              <div className="statement__amounts">
-                <p>
-                  <Money value={line.amount} currency={first.data.currency} direction={line.direction} />
-                </p>
-                <p className="muted">
-                  saldo <Money value={line.balanceAfter} currency={first.data.currency} />
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="statement__hint">Toque numa movimentação para ver o código dela, que o banco usa para localizar a operação.</p>
+          <ul className="statement">
+            {lines.map((line) => (
+              <li key={line.sequence}>
+                {/* Detalhe nativo: abre com teclado e leitor de tela sem JavaScript próprio. */}
+                <details className="statement__item">
+                  <summary className="statement__line">
+                    <div className="statement__what">
+                      <p>{line.description}</p>
+                      <p className="muted">{formatDateTime(line.postedAt)}</p>
+                    </div>
+                    <div className="statement__amounts">
+                      <p>
+                        <Money value={line.amount} currency={first.data.currency} direction={line.direction} />
+                      </p>
+                      <p className="muted">
+                        saldo <Money value={line.balanceAfter} currency={first.data.currency} />
+                      </p>
+                    </div>
+                  </summary>
+                  <div className="statement__detail">
+                    {line.operationId ? (
+                      <p>
+                        Código da operação: <OperationCode code={line.operationId} />
+                      </p>
+                    ) : (
+                      <p className="muted">Lançamento sem código de operação.</p>
+                    )}
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {moreError && (
         <p className="field__error" role="alert">

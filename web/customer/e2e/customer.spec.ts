@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { accountOf, balanceOf, cents, cpf, deposit } from "./seed";
+import { accountOf, auditedOperations, balanceOf, cents, cpf, deposit } from "./seed";
 
 const app = "http://localhost:5190";
 
@@ -65,8 +65,15 @@ test("transferência interna passa pelo resumo e move o dinheiro uma vez", async
   expect(cents(await balanceOf(request, "bruno", bruno.id))).toBe(cents(before.bruno) - 12345n);
   expect(cents(await balanceOf(request, "alice", alice.id))).toBe(cents(before.alice) + 12345n);
 
+  // O código do comprovante é o que a auditoria do banco encontra.
+  const code = (await page.locator(".facts .code__value").innerText()).trim();
+  expect(await auditedOperations(request, code)).toContain("transfer.create");
+
   await page.getByRole("link", { name: "Ver extrato" }).click();
-  await expect(page.locator(".statement__line").first()).toContainText("R$ 123,45");
+  const line = page.locator(".statement__item").first();
+  await expect(line.locator(".statement__line")).toContainText("R$ 123,45");
+  await line.locator("summary").click();
+  await expect(line.locator(".code__value")).toHaveText(code);
 });
 
 test("resposta perdida na rede: tentar de novo não transfere duas vezes", async ({ page, request }) => {

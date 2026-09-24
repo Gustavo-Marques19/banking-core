@@ -4,6 +4,7 @@ import { Fragment, useRef, useState, type FormEvent, type ReactNode, type RefObj
 import { Link, useNavigate } from "react-router";
 import type { AccountLookupView, AccountView, ExternalTransferView, TransferView } from "../api/types";
 import { accountLabel, useBank, useSelectedAccount } from "../bank";
+import { OperationCode } from "../components/OperationCode";
 import { messageFor } from "../lib/messages";
 import { useFocusHeading } from "../lib/useFocusHeading";
 
@@ -123,10 +124,10 @@ export function Transfer() {
           <h1 ref={heading} tabIndex={-1}>
             Transferência concluída
           </h1>
-          <p>O dinheiro já está na conta de destino.</p>
+          <p>O dinheiro já está na conta de destino. Guarde o código se precisar falar com o banco sobre ela.</p>
         </header>
         <div className="panel">
-          <Facts intent={step.intent} />
+          <Facts intent={step.intent} code={step.transfer.id} />
           <div className="form__actions">
             <Link className="button button--primary" to="/">
               Ver extrato
@@ -326,7 +327,7 @@ function Review({ heading, intent, onBack, onInternalDone, onExternalCreated }: 
   );
 }
 
-function Facts({ intent }: { intent: Intent }) {
+function Facts({ intent, code }: { intent: Intent; code?: string }) {
   const facts: [string, ReactNode][] = [
     ["Valor", <strong className="facts__amount">{`${currencySymbol(intent.source.currency)} ${formatAmount(intent.amount)}`}</strong>],
     ["De", accountLabel(intent.source)],
@@ -338,6 +339,10 @@ function Facts({ intent }: { intent: Intent }) {
     }
   } else {
     facts.push(["Para", `Banco ${intent.destination.bank}, agência ${intent.destination.branch}, conta ${intent.destination.account}`]);
+  }
+
+  if (code) {
+    facts.push(["Código da transferência", <OperationCode code={code} />]);
   }
 
   return (

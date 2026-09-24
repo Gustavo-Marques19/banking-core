@@ -12,6 +12,20 @@ internal sealed class DepositRepository(BankingDbContext db) : IDepositRepositor
 
     public Task<Deposit?> FindAsync(Guid id, CancellationToken cancellationToken) =>
         db.Set<Deposit>().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+
+    public Task<Deposit?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
+        RowLocks.FindForUpdateAsync<Deposit>(db, "payments.deposits", id, d => d.Id, cancellationToken);
+}
+
+internal sealed class TransferReversalRepository(BankingDbContext db) : ITransferReversalRepository
+{
+    public void Add(TransferReversal reversal) => db.Add(reversal);
+
+    public Task<TransferReversal?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Set<TransferReversal>().AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+    public Task<TransferReversal?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
+        RowLocks.FindForUpdateAsync<TransferReversal>(db, "payments.transfer_reversals", id, r => r.Id, cancellationToken);
 }
 
 internal sealed class TransferRepository(BankingDbContext db) : ITransferRepository

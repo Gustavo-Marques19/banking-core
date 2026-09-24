@@ -37,6 +37,11 @@ public sealed class Deposit
 
     public Guid? LedgerTransactionId { get; private set; }
 
+    /// <summary>Segundo operador, quando o depósito passou pela aprovação (maker-checker).</summary>
+    public string? DecidedBy { get; private set; }
+
+    public DateTimeOffset? DecidedAt { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public Money Amount => Money.FromMinor(AmountMinor, Currency.FromCode(CurrencyCode));
@@ -90,16 +95,74 @@ public sealed class Deposit
             return (deposit, null);
         }
 
+        if (amount > limits.ApprovalThreshold)
+        {
+            deposit.Status = DepositStatus.PendingApproval;
+            return (deposit, null);
+        }
+
+        return (deposit, deposit.Post(account, now));
+    }
+
+    /// <summary>
+    /// Segundo operador aprova. Quem pediu não aprova o próprio depósito. Conta e limite diário de quem pediu são
+    /// conferidos de novo, com os valores de agora.
+    /// </summary>
+    public LedgerTransaction? Approve(
+        string approver, Account account, Money requesterUsedToday, DepositLimits limits, DateTimeOffset now)
+    {
+        EnsurePendingAndIndependent(approver);
+        ArgumentNullException.ThrowIfNull(account);
+        ArgumentNullException.ThrowIfNull(limits);
+
+        DecidedBy = approver;
+        DecidedAt = now;
+        var rejection = Evaluate(account, Amount, requesterUsedToday, limits);
+        if (rejection is not null)
+        {
+            Status = DepositStatus.Rejected;
+            RejectionReason = rejection;
+            return null;
+        }
+
+        return Post(account, now);
+    }
+
+    public void Reject(string approver, DateTimeOffset now)
+    {
+        EnsurePendingAndIndependent(approver);
+        DecidedBy = approver;
+        DecidedAt = now;
+        Status = DepositStatus.Rejected;
+        RejectionReason = Common.RejectionReason.RejectedByApprover;
+    }
+
+    private void EnsurePendingAndIndependent(string approver)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(approver);
+        if (Status != DepositStatus.PendingApproval)
+        {
+            throw new DomainException("not_pending", "O depósito não está esperando aprovação.");
+        }
+
+        if (approver == RequestedBy)
+        {
+            throw new DomainException("self_approval_not_allowed", "Quem pediu o depósito não pode aprová-lo.");
+        }
+    }
+
+    private LedgerTransaction Post(Account account, DateTimeOffset now)
+    {
         var posting = LedgerTransaction.Create(
-            $"deposit:{deposit.Id}",
+            $"deposit:{Id}",
             LedgerTransactionType.Deposit,
             $"Depósito na conta {account.Number}",
             now,
-            [PostingLine.Debit(SystemLedgerAccounts.Funding, amount), PostingLine.Credit(account.LedgerAccountId, amount)]);
+            [PostingLine.Debit(SystemLedgerAccounts.Funding, Amount), PostingLine.Credit(account.LedgerAccountId, Amount)]);
 
-        deposit.Status = DepositStatus.Completed;
-        deposit.LedgerTransactionId = posting.Id;
-        return (deposit, posting);
+        Status = DepositStatus.Completed;
+        LedgerTransactionId = posting.Id;
+        return posting;
     }
 
     private static RejectionReason? Evaluate(Account account, Money amount, Money operatorUsedToday, DepositLimits limits)

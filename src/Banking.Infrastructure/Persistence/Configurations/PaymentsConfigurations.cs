@@ -21,6 +21,7 @@ internal sealed class DepositConfiguration : IEntityTypeConfiguration<Deposit>
         builder.Property(d => d.IdempotencyKey).HasMaxLength(64);
         builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(30);
         builder.Property(d => d.RejectionReason).HasConversion<string>().HasMaxLength(40);
+        builder.Property(d => d.DecidedBy).HasMaxLength(100);
         builder.Ignore(d => d.Amount);
 
         builder.HasOne<Account>().WithMany().HasForeignKey(d => d.AccountId).OnDelete(DeleteBehavior.Restrict);
@@ -81,6 +82,26 @@ internal sealed class ExternalTransferConfiguration : IEntityTypeConfiguration<E
         builder.Ignore(t => t.IsTerminal);
 
         builder.HasOne<Account>().WithMany().HasForeignKey(t => t.SourceAccountId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class TransferReversalConfiguration : IEntityTypeConfiguration<TransferReversal>
+{
+    public void Configure(EntityTypeBuilder<TransferReversal> builder)
+    {
+        builder.ToTable("transfer_reversals", DatabaseSchemas.Payments);
+        builder.HasKey(r => r.Id);
+
+        // No máximo um estorno pendente ou concluído por transferência; recusados podem se repetir.
+        builder.HasIndex(r => r.TransferId).IsUnique().HasFilter("status IN ('PendingApproval', 'Completed')");
+
+        builder.Property(r => r.RequestedBy).HasMaxLength(100);
+        builder.Property(r => r.Reason).HasMaxLength(200);
+        builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.RejectionReason).HasConversion<string>().HasMaxLength(40);
+        builder.Property(r => r.DecidedBy).HasMaxLength(100);
+
+        builder.HasOne<InternalTransfer>().WithMany().HasForeignKey(r => r.TransferId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

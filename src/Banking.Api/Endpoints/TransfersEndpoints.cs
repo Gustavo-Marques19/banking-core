@@ -1,6 +1,7 @@
 using Banking.Api.Composition;
 using Banking.Api.Http;
 using Banking.Application.LedgerQueries;
+using Banking.Application.Reversals;
 using Banking.Application.Transfers;
 using Banking.Contracts.Requests;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,24 @@ internal static class TransfersEndpoints
 
         transfers.MapGet("/{id:guid}", async (Guid id, HttpContext http, GetTransferHandler handler, CancellationToken ct) =>
             ApiResults.From(await handler.HandleAsync(http.User.ToActor(), id, ct), Results.Ok));
+
+        transfers.MapPost("/{id:guid}/reversals", async (Guid id, ReversalRequest request, HttpContext http, ReversalHandler handler, CancellationToken ct) =>
+                ApiResults.From(await handler.RequestAsync(http.User.ToActor(), id, request.Reason, ct),
+                    view => Results.Accepted($"/api/v1/reversals/{view.Id}", view)))
+            .RequireAuthorization(Policies.Operator);
+
+        var reversals = api.MapGroup("/reversals").WithTags("Transfers").RequireAuthorization(Policies.Operator);
+
+        reversals.MapGet("/{id:guid}", async (Guid id, HttpContext http, ReversalHandler handler, CancellationToken ct) =>
+            ApiResults.From(await handler.GetAsync(http.User.ToActor(), id, ct), Results.Ok));
+
+        reversals.MapPost("/{id:guid}/approve", async (Guid id, HttpContext http, ReversalHandler handler, CancellationToken ct) =>
+            ApiResults.From(await handler.ApproveAsync(http.User.ToActor(), id, ct), view => view.RejectionReason is { } reason
+                ? ApiResults.Rejected(reason, "Estorno recusado na aprovação.", "reversalId", view.Id)
+                : Results.Ok(view)));
+
+        reversals.MapPost("/{id:guid}/reject", async (Guid id, HttpContext http, ReversalHandler handler, CancellationToken ct) =>
+            ApiResults.From(await handler.RejectAsync(http.User.ToActor(), id, ct), Results.Ok));
 
         api.MapGet("/ledger/transactions/{id:guid}", async (Guid id, HttpContext http, GetLedgerTransactionHandler handler, CancellationToken ct) =>
                 ApiResults.From(await handler.HandleAsync(http.User.ToActor(), id, ct), Results.Ok))

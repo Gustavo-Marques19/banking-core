@@ -22,3 +22,5 @@ public sealed record CreateExternalTransferRequest(
 public sealed record ProviderWebhookRequest(Guid EventId, string ClientReference, string Status);
 
 public sealed record ProviderScenarioRequest(string Scenario);
+
+public sealed record ReversalRequest(string Reason);

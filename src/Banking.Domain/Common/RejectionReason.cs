@@ -14,4 +14,7 @@ public enum RejectionReason
     /// <summary>Destino bloqueado ou encerrado. Não diz qual dos dois: a conta é de outra pessoa.</summary>
     DestinationUnavailable,
     SelfApprovalNotAllowed,
+
+    /// <summary>O aprovador recusou a operação pendente.</summary>
+    RejectedByApprover,
 }

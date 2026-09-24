@@ -15,6 +15,9 @@ public sealed class ConcurrencyTests(PostgresFixture postgres) : IAsyncDisposabl
     {
         ["ConnectionStrings:Banking"] = postgres.AppConnectionString + ";Maximum Pool Size=150",
         ["Database:LockTimeout"] = "00:00:15",
+
+        // O cenário é justamente um usuário disparando 100 requisições de uma vez.
+        ["RateLimiting:TokenLimit"] = "100000",
     });
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

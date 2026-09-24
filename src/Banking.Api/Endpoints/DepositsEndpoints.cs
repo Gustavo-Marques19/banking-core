@@ -30,10 +30,26 @@ internal static class DepositsEndpoints
             .WithTags("Deposits")
             .RequireAuthorization(Policies.Operator);
 
+        api.MapPost("/deposits/{id:guid}/approve", async (Guid id, HttpContext http, DepositApprovalHandler handler, CancellationToken ct) =>
+                ApiResults.From(await handler.ApproveAsync(http.User.ToActor(), id, ct), ToDecisionHttp))
+            .WithTags("Deposits")
+            .RequireAuthorization(Policies.Operator);
+
+        api.MapPost("/deposits/{id:guid}/reject", async (Guid id, HttpContext http, DepositApprovalHandler handler, CancellationToken ct) =>
+                ApiResults.From(await handler.RejectAsync(http.User.ToActor(), id, ct), Results.Ok))
+            .WithTags("Deposits")
+            .RequireAuthorization(Policies.Operator);
+
         return api;
     }
 
     private static IResult ToHttp(DepositView view) => view.RejectionReason is { } reason
         ? ApiResults.Rejected(reason, "Depósito recusado.", "depositId", view.Id)
-        : Results.Created($"/api/v1/deposits/{view.Id}", view);
+        : view.Status == "pending_approval"
+            ? Results.Accepted($"/api/v1/deposits/{view.Id}", view)
+            : Results.Created($"/api/v1/deposits/{view.Id}", view);
+
+    private static IResult ToDecisionHttp(DepositView view) => view.RejectionReason is { } reason
+        ? ApiResults.Rejected(reason, "Depósito recusado na aprovação.", "depositId", view.Id)
+        : Results.Ok(view);
 }

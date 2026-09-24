@@ -35,6 +35,11 @@ public static class NotificationProjector
                 [new(e.SourceAccountId, "external_transfer_failed", e.Amount, e.Currency, e.ExternalTransferId)],
             "ExternalTransferCancelled.v1" when Read<ExternalTransferCancelledV1>(envelope) is { } e =>
                 [new(e.SourceAccountId, "external_transfer_cancelled", e.Amount, e.Currency, e.ExternalTransferId)],
+            "TransferReversed.v1" when Read<TransferReversedV1>(envelope) is { } e =>
+            [
+                new(e.SourceAccountId, "transfer_reversal_received", e.Amount, e.Currency, e.TransferId),
+                new(e.DestinationAccountId, "transfer_reversal_debited", e.Amount, e.Currency, e.TransferId),
+            ],
             "AccountStatusChanged.v1" when Read<AccountStatusChangedV1>(envelope) is { } e =>
                 [new(e.AccountId, $"account_{e.Status}", null, null, e.AccountId)],
             _ => [],

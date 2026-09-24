@@ -9,6 +9,7 @@ using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Provider;
 using Banking.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddBankingObservability();
@@ -32,6 +33,7 @@ builder.Services.Configure<OperationsOptions>(builder.Configuration.GetSection(O
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddBankingApplication(builder.Configuration);
 builder.Services.AddBankingAuthentication(builder.Configuration);
+builder.Services.AddBankingRateLimiting(builder.Configuration);
 
 var app = builder.Build();
 
@@ -39,9 +41,13 @@ var app = builder.Build();
 app.Services.GetRequiredService<IDocumentProtector>();
 
 app.UseMiddleware<CorrelationMiddleware>();
+
+// Uma linha por requisição: método, rota, status e duração. Corpo nunca é logado.
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())

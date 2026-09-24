@@ -9,7 +9,7 @@ namespace Banking.UnitTests.Payments;
 
 public sealed class DepositTests
 {
-    private static readonly DepositLimits Limits = new(Brl(50_000_00), Brl(200_000_00));
+    private static readonly DepositLimits Limits = new(Brl(50_000_00), Brl(200_000_00), Brl(10_000_00));
 
     [Fact]
     public void Deposito_aceito_lanca_d_funding_c_cliente()

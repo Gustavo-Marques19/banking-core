@@ -42,7 +42,9 @@ internal static class ObservabilitySetup
             telemetry.UseOtlpExporter();
         }
 
-        builder.Services.AddSerilog((services, logger) =>
+        // preserveStaticLogger: cada host usa o próprio logger, em vez de todos escreverem no Log.Logger global.
+        builder.Services.AddSerilog(
+            (services, logger) =>
         {
             logger
                 .ReadFrom.Configuration(builder.Configuration)
@@ -64,7 +66,8 @@ internal static class ObservabilitySetup
                     options.ResourceAttributes = new Dictionary<string, object> { ["service.name"] = ServiceName };
                 });
             }
-        });
+        },
+            preserveStaticLogger: true);
 
         return builder;
     }

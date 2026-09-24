@@ -20,8 +20,18 @@ export function ConfirmDialog({ title, facts, confirmLabel, tone, onConfirm, onC
 
   useEffect(() => {
     const dialog = ref.current;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog?.showModal?.();
-    return () => dialog?.close?.();
+    return () => {
+      dialog?.close?.();
+      // O React tira o <dialog> da página antes de o navegador devolver o foco; devolvemos aqui.
+      // Se quem abriu sumiu (o pedido saiu da fila), o foco vai para o título da tela.
+      const target = opener?.isConnected ? opener : document.querySelector<HTMLElement>("main h1");
+      if (target && target !== opener) {
+        target.tabIndex = -1;
+      }
+      target?.focus();
+    };
   }, []);
 
   async function confirm() {

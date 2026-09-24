@@ -92,3 +92,23 @@ describe("Aprovações", () => {
     expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeTruthy();
   });
 });
+
+describe("Diálogo de confirmação", () => {
+  it("fechar devolve o foco a quem abriu", async () => {
+    stubApi({
+      "/api/v1/operations/pending-deposits": [deposit("outro")],
+      "/api/v1/operations/pending-reversals": [],
+      "/api/v1/operations/pending-manual-resolutions": [],
+      "/api/v1/accounts/a1": { id: "a1", branch: "0001", number: "00000042", status: "active" },
+    });
+    renderApprovals();
+    const approve = await screen.findByRole("button", { name: "Aprovar" });
+
+    approve.focus();
+    approve.click();
+    (await screen.findByRole("button", { name: "Voltar" })).click();
+
+    await screen.findByRole("button", { name: "Aprovar" });
+    expect(document.activeElement).toBe(approve);
+  });
+});

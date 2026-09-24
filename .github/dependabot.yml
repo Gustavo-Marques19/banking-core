@@ -15,3 +15,11 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /web/backoffice
+    schedule:
+      interval: weekly
+    groups:
+      web:
+        patterns: ["*"]

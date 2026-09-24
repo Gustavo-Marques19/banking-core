@@ -1,0 +1,522 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 100%;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* Foco sempre visível, no acento: é um dos dois lugares onde ele aparece (DESIGN.md). */
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--accent-text);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-s);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Estrutura */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-8);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__name {
+  font-weight: 600;
+  font-size: var(--text-m);
+  white-space: nowrap;
+}
+
+.topbar__name span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--text-m);
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+/* Item ativo: texto claro e sublinhado no acento, sem fundo. */
+.nav a[aria-current="page"] {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-text);
+  border-radius: 0;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-s);
+}
+
+main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-12);
+}
+
+.page-header {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.page-header h1 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  max-width: 44rem;
+}
+
+.section + .section {
+  margin-top: var(--space-12);
+}
+
+.section__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-l);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.section__count {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: var(--text-m);
+}
+
+/* Botões */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-m);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Ação principal da tela: único preenchimento no acento. */
+.button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.button--primary:hover:not(:disabled) {
+  border-color: var(--accent-text);
+}
+
+.button--danger {
+  color: var(--danger);
+}
+
+/* Fila de pedidos: a tela é a lista, então a lista é o foco. */
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.request {
+  display: grid;
+  grid-template-columns: minmax(11rem, 14rem) 1fr auto;
+  gap: var(--space-4) var(--space-6);
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.request__amount {
+  font-size: var(--text-xl);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.request__amount small {
+  color: var(--text-muted);
+  font-size: var(--text-s);
+  font-weight: 400;
+  margin-right: var(--space-1);
+}
+
+.request__kind {
+  color: var(--text-muted);
+  font-size: var(--text-s);
+  margin-bottom: var(--space-1);
+}
+
+.request__body {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Motivo do projeto: toda decisão mostra quem pediu e quem decide (maker-checker). */
+.maker-checker {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+.maker-checker strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Formulário aberto ocupa a linha inteira. */
+.request--editing {
+  grid-template-columns: 1fr;
+}
+
+.request__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.request__blocked {
+  font-size: var(--text-s);
+  color: var(--warning);
+  max-width: 16rem;
+  text-align: right;
+}
+
+@media (max-width: 48rem) {
+  .request {
+    grid-template-columns: 1fr;
+  }
+
+  .request__actions {
+    justify-content: flex-start;
+  }
+
+  .request__blocked {
+    text-align: left;
+  }
+}
+
+/* Estado sempre em texto; a cor só reforça. */
+
+.status {
+  display: inline-block;
+  font-size: var(--text-s);
+  font-weight: 500;
+}
+
+.status--warning {
+  color: var(--warning);
+}
+
+.status--success {
+  color: var(--success);
+}
+
+.status--danger {
+  color: var(--danger);
+}
+
+/* Vazio, carregando, erro */
+
+.state {
+  padding: var(--space-6);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-panel);
+  color: var(--text-muted);
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.state--error {
+  border-style: solid;
+  border-color: var(--danger);
+  color: var(--text);
+}
+
+.state--error strong {
+  color: var(--danger);
+}
+
+/* Formulários */
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.field label,
+.field legend {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+.field input[type="text"],
+.field input[type="date"],
+.field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.field__hint {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+.field__error {
+  font-size: var(--text-s);
+  color: var(--danger);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--text);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.toolbar .field {
+  flex: 1 1 18rem;
+}
+
+/* Diálogo de confirmação: o único elemento elevado, por isso a única sombra. */
+
+dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: var(--space-6);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.dialog__error {
+  margin-bottom: var(--space-4);
+}
+
+.dialog__title {
+  font-size: var(--text-l);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-m);
+}
+
+.facts dt {
+  color: var(--text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Reconciliação e auditoria */
+
+.findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.finding {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.verdict {
+  font-size: var(--text-l);
+  font-weight: 500;
+  margin-bottom: var(--space-4);
+}
+
+.verdict--after-action {
+  margin-top: var(--space-4);
+}
+
+.section__lead {
+  margin-bottom: var(--space-4);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-m);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: var(--text-s);
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

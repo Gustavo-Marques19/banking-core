@@ -1,0 +1,37 @@
+/* Valores de web/backoffice/DESIGN.md. Contraste conferido lá. */
+:root {
+  color-scheme: dark;
+
+  --bg: #0e1417;
+  --surface: #151d21;
+  --surface-raised: #1c262b;
+  --border: #2a363c;
+  --text: #e4eaec;
+  --text-muted: #9ba9af;
+  --accent: #1f6f76;
+  --accent-text: #5fb7bd;
+  --success: #4fb286;
+  --warning: #d9a441;
+  --danger: #e0706a;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-s: 0.8125rem;
+  --text-m: 0.9375rem;
+  --text-l: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Dois raios: controles pequenos e painéis. */
+  --radius-control: 6px;
+  --radius-panel: 10px;
+}

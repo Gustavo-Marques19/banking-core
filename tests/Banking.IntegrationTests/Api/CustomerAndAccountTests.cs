@@ -96,6 +96,18 @@ public sealed class CustomerAndAccountTests(PostgresFixture postgres)
         Assert.Equal(0, statement.GetProperty("lines").GetArrayLength());
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(101)]
+    public async Task Extrato_com_pagina_fora_do_limite_responde_400(int limit)
+    {
+        var (user, account) = await _bank.NewAccountAsync();
+
+        var response = await _bank.Client(user).GetAsync($"/api/v1/accounts/{account}/transactions?limit={limit}", Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [Fact]
     public async Task Cliente_lista_so_as_proprias_contas()
     {

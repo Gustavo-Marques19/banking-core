@@ -9,6 +9,7 @@ using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Provider;
 using Banking.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddBankingObservability();
@@ -40,6 +41,9 @@ var app = builder.Build();
 app.Services.GetRequiredService<IDocumentProtector>();
 
 app.UseMiddleware<CorrelationMiddleware>();
+
+// Uma linha por requisição: método, rota, status e duração. Corpo nunca é logado.
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();

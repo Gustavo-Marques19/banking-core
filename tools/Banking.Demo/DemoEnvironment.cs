@@ -75,6 +75,8 @@ internal sealed class DemoEnvironment : IAsyncDisposable
             await db.Database.MigrateAsync();
         }
 
+        // Projetos de teste recebem esse caminho por um atributo gerado; um console comum precisa informar.
+        System.Environment.SetEnvironmentVariable("ASPNETCORE_TEST_CONTENTROOT_BANKING_API", Path.Combine(root, "src", "Banking.Api"));
         environment.Api = new DemoApi(environment);
         environment.Api.StartServer();
         return environment;

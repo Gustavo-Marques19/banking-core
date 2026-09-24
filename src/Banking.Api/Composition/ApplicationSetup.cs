@@ -1,6 +1,8 @@
 using Banking.Application.Accounts;
 using Banking.Application.Customers;
 using Banking.Application.Deposits;
+using Banking.Application.ExternalTransfers;
+using Banking.Application.Reconciliation;
 using Banking.Application.Idempotency;
 using Banking.Application.LedgerQueries;
 using Banking.Application.Notifications;
@@ -50,6 +52,15 @@ internal static class ApplicationSetup
         services.AddScoped<GetTransferHandler>();
         services.AddScoped<GetLedgerTransactionHandler>();
         services.AddScoped<NotificationQueriesHandler>();
+        services.AddScoped<CreateExternalTransferHandler>();
+        services.AddScoped<ExternalTransferQueriesHandler>();
+        services.AddScoped<CancelExternalTransferHandler>();
+        services.AddScoped<ExternalTransferProcessor>();
+        services.AddScoped<ProviderWebhookHandler>();
+        services.AddScoped<ReconciliationHandler>();
+        services.AddSingleton(new ExternalTransferSettings(
+            configuration.GetValue("ExternalTransfers:CheckInterval", TimeSpan.FromSeconds(5)),
+            configuration.GetValue("ExternalTransfers:MaxSubmitAttempts", 5)));
 
         return services;
     }

@@ -6,6 +6,7 @@ using Banking.Domain.Accounts;
 using Banking.Infrastructure;
 using Banking.Infrastructure.Messaging;
 using Banking.Infrastructure.Persistence;
+using Banking.Infrastructure.Provider;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,8 @@ builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(Dat
 builder.Services.Configure<MessagingOptions>(builder.Configuration.GetSection(MessagingOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection(OutboxOptions.SectionName));
 builder.Services.Configure<ConsumerOptions>(builder.Configuration.GetSection(ConsumerOptions.SectionName));
+builder.Services.Configure<ProviderOptions>(builder.Configuration.GetSection(ProviderOptions.SectionName));
+builder.Services.Configure<ExternalTransferWorkerOptions>(builder.Configuration.GetSection(ExternalTransferWorkerOptions.SectionName));
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddBankingApplication(builder.Configuration);
 builder.Services.AddBankingAuthentication(builder.Configuration);
@@ -53,7 +56,11 @@ app.MapGroup("/api/v1")
     .MapCustomers()
     .MapAccounts()
     .MapDeposits()
-    .MapTransfers();
+    .MapTransfers()
+    .MapExternalTransfers();
+
+app.MapProviderWebhook();
+app.MapMockProviderAdmin();
 
 app.Run();
 

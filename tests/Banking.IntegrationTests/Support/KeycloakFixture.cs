@@ -47,19 +47,34 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
     public static async Task<Uri> SubmitLoginFormAsync(HttpClient browser, Uri authorizeUrl, string username)
     {
         var ct = TestContext.Current.CancellationToken;
+
+        // Segue redirects só dentro do próprio Keycloak, até a página de login.
         var page = await browser.GetAsync(authorizeUrl, ct);
+        for (var hops = 0; page.StatusCode is HttpStatusCode.Found or HttpStatusCode.SeeOther && hops < 5; hops++)
+        {
+            var next = new Uri(authorizeUrl, page.Headers.Location!);
+            Assert.Equal(authorizeUrl.Authority, next.Authority);
+            page = await browser.GetAsync(next, ct);
+        }
+
         var html = await page.Content.ReadAsStringAsync(ct);
-        var action = WebUtility.HtmlDecode(FormAction().Match(html).Groups[1].Value);
-        Assert.False(string.IsNullOrEmpty(action), "Formulário de login do Keycloak não encontrado.");
+        var form = LoginForm().Match(html).Value;
+        var action = WebUtility.HtmlDecode(FormAction().Match(form).Groups[1].Value);
+        Assert.False(
+            string.IsNullOrEmpty(action),
+            $"Formulário de login do Keycloak não encontrado. Status {(int)page.StatusCode}; início da página: {html[..Math.Min(html.Length, 600)]}");
 
         var response = await browser.PostAsync(
-            action,
+            new Uri(authorizeUrl, action),
             new FormUrlEncodedContent(new Dictionary<string, string> { ["username"] = username, ["password"] = $"{username}-dev-only" }),
             ct);
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
         return response.Headers.Location!;
     }
 
-    [GeneratedRegex("<form[^>]+id=\"kc-form-login\"[^>]+action=\"([^\"]+)\"")]
+    [GeneratedRegex("<form[^>]*kc-form-login[^>]*>")]
+    private static partial Regex LoginForm();
+
+    [GeneratedRegex("action=\"([^\"]+)\"")]
     private static partial Regex FormAction();
 }

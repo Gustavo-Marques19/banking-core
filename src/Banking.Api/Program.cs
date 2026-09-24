@@ -1,7 +1,7 @@
-using System.Text.Json.Serialization;
 using Banking.Api.Composition;
 using Banking.Api.Endpoints;
 using Banking.Api.Http;
+using Banking.Contracts;
 using Banking.Domain.Accounts;
 using Banking.Infrastructure;
 using Banking.Infrastructure.Persistence;
@@ -16,12 +16,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ContentionExceptionHandler>();
 builder.Services.AddOpenApi();
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
-    options.SerializerOptions.RespectNullableAnnotations = true;
-    options.SerializerOptions.RespectRequiredConstructorParameters = true;
-});
+builder.Services.ConfigureHttpJsonOptions(options => ContractJson.Apply(options.SerializerOptions));
 
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 builder.Services.AddInfrastructure(connectionString);

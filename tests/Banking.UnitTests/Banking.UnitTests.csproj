@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Banking.Application\Banking.Application.csproj" />
+    <ProjectReference Include="..\..\src\Banking.Contracts\Banking.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Banking.Domain\Banking.Domain.csproj" />
   </ItemGroup>
 

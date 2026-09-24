@@ -62,14 +62,21 @@ public sealed class RabbitMqConnectionProvider(IOptions<MessagingOptions> option
     /// </summary>
     public static async Task AbortQuietlyAsync(IConnection connection)
     {
-        try
+        // O dispose espera o loop de leitura do socket, que só termina quando os heartbeats falham.
+        // Quem chama não precisa esperar isso: a limpeza continua em segundo plano.
+        var cleanup = Task.Run(async () =>
         {
-            await connection.AbortAsync(TimeSpan.FromSeconds(1));
-            await connection.DisposeAsync();
-        }
-        catch (Exception)
-        {
-            // A conexão já está sendo descartada; um erro no fechamento não muda nada.
-        }
+            try
+            {
+                await connection.AbortAsync(TimeSpan.FromSeconds(1));
+                await connection.DisposeAsync();
+            }
+            catch (Exception)
+            {
+                // A conexão já está sendo descartada; um erro no fechamento não muda nada.
+            }
+        });
+
+        await Task.WhenAny(cleanup, Task.Delay(TimeSpan.FromSeconds(1)));
     }
 }

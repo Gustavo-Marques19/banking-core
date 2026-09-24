@@ -25,7 +25,7 @@ internal sealed class RabbitMqPublisher(RabbitMqConnectionProvider connections, 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(options.Value.PublishTimeout);
 
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(timeout.Token);
         try
         {
             var channel = await GetChannelAsync(timeout.Token);

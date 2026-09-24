@@ -15,7 +15,7 @@ Um backend-for-frontend (BFF) em ASP.NET Core, um por front.
 - **Sessão:** os tokens ficam no ticket da sessão, criptografado pelo Data Protection. O navegador recebe só o cookie `__Host-backoffice`, com `HttpOnly`, `Secure` e `SameSite=Strict`.
 - **Chamadas:** `/api/*` passa pelo BFF (YARP), que remove o cookie e o header CSRF e acrescenta `Authorization: Bearer` com o token do usuário. Token perto de expirar é renovado pelo refresh token, também no servidor; se a renovação falhar, a sessão acaba.
 - **CSRF:** toda requisição que muda estado em `/api` ou `/bff` exige o header `X-CSRF: 1`. Outro site não consegue enviá-lo sem CORS, e o BFF não habilita CORS.
-- **Headers:** CSP sem `unsafe-inline`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`, HSTS fora de desenvolvimento.
+- **Headers:** CSP sem `unsafe-inline`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`, HSTS fora de desenvolvimento. Só em desenvolvimento a CSP aceita script e estilo inline, que o Vite usa para o hot reload; o build de produção não tem nada inline, e os E2E rodam com a CSP estrita.
 - **Acesso:** só `operator` e `admin` entram. Sem sessão, `/api` e `/bff` respondem 401 (o front decide ir ao login); as outras rotas redirecionam para o login.
 - **Logout:** `POST /bff/logout` (com CSRF) encerra a sessão local e devolve a URL de logout do Keycloak, com `id_token_hint`.
 

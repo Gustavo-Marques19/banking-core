@@ -30,8 +30,10 @@ internal sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEn
     public Task InvokeAsync(HttpContext context)
     {
         var headers = context.Response.Headers;
+        // Em desenvolvimento, o Vite injeta script e estilo inline para o hot reload. O build de produção não tem nada inline.
+        var inline = environment.IsDevelopment() ? " 'unsafe-inline'" : string.Empty;
         headers.ContentSecurityPolicy =
-            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
+            $"default-src 'self'; script-src 'self'{inline}; style-src 'self'{inline}; img-src 'self' data:; font-src 'self'; "
             + "connect-src 'self'" + (environment.IsDevelopment() ? " ws:" : string.Empty)
             + "; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
         headers.XContentTypeOptions = "nosniff";

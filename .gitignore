@@ -22,3 +22,11 @@ coverage*/
 
 # SO
 .DS_Store
+
+# Front: dependências e build (o build vai para o wwwroot do BFF)
+node_modules/
+src/Banking.Backoffice.Bff/wwwroot/*
+!src/Banking.Backoffice.Bff/wwwroot/.gitkeep
+web/backoffice/test-results/
+web/backoffice/playwright-report/
+web/backoffice/tsconfig.tsbuildinfo

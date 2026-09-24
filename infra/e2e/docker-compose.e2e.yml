@@ -1,0 +1,31 @@
+# Dependências dos testes E2E do backoffice (scripts/e2e.sh). Senhas só para teste.
+name: banking-e2e
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres-e2e
+      BANKING_MIGRATOR_PASSWORD: migrator-e2e
+      BANKING_APP_PASSWORD: app-e2e
+    volumes:
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d banking"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: keycloak-e2e
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ../../.devcontainer/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8080:8080"

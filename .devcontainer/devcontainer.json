@@ -6,7 +6,8 @@
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
   },
   "hostRequirements": {
     "cpus": 2,
@@ -21,7 +22,7 @@
     "rabbitmq:15672": { "label": "RabbitMQ management", "onAutoForward": "silent" },
     "aspire-dashboard:18888": { "label": "Aspire Dashboard (traces, métricas, logs)", "onAutoForward": "silent" }
   },
-  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh && ./scripts/dev-secrets.sh",
+  "postCreateCommand": "dotnet tool restore && dotnet restore && ./scripts/migrate.sh && ./scripts/dev-secrets.sh && npm ci --prefix web/backoffice",
   "customizations": {
     "vscode": {
       "extensions": [

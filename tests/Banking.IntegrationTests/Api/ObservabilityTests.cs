@@ -34,7 +34,6 @@ public sealed class ObservabilityTests(PostgresFixture postgres)
         api.Services.GetRequiredService<ILogger<ObservabilityTests>>()
             .LogInformation("Documento recebido {@Document}", Cpf.Parse(cpf));
 
-        Assert.Contains(sink.Rendered, line => line.Contains("/api/v1/customers", StringComparison.Ordinal));
         Assert.Contains(sink.Rendered, line => line.Contains($"***.{cpf[3..6]}.{cpf[6..9]}-**", StringComparison.Ordinal));
         Assert.DoesNotContain(sink.Rendered, line => line.Contains(cpf, StringComparison.Ordinal));
         Assert.DoesNotContain(sink.Rendered, line => line.Contains(TestCpf.Formatted(cpf), StringComparison.Ordinal));

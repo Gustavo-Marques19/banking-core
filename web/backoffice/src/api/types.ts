@@ -81,6 +81,12 @@ export interface ReconciliationReport {
   isConsistent: boolean;
 }
 
+/** Só o que a auditoria usa do lançamento contábil. */
+export interface LedgerTransactionView {
+  id: string;
+  externalId: string;
+}
+
 export interface AuditLogView {
   position: number;
   occurredAt: string;

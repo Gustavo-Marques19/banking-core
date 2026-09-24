@@ -91,4 +91,18 @@ public sealed class LedgerTransactionTests
         [PostingLine.Debit(SystemLedgerAccounts.Funding, Brl(minor)), PostingLine.Credit(Customer, Brl(minor))]);
 
     private static Money Brl(long minor) => Money.FromMinor(minor, Currency.Brl);
+
+    [Theory]
+    [InlineData("transfer:0192a3b4-0000-7000-8000-000000000001", "0192a3b4-0000-7000-8000-000000000001")]
+    [InlineData("transfer:0192a3b4-0000-7000-8000-000000000001:reversal", "0192a3b4-0000-7000-8000-000000000001")]
+    [InlineData("external-transfer:0192a3b4-0000-7000-8000-000000000002:reservation", "0192a3b4-0000-7000-8000-000000000002")]
+    [InlineData("deposit:0192a3b4-0000-7000-8000-000000000003", "0192a3b4-0000-7000-8000-000000000003")]
+    public void Id_da_operacao_sai_do_external_id(string externalId, string expected) =>
+        Assert.Equal(Guid.Parse(expected), LedgerTransaction.OperationIdOf(externalId));
+
+    [Theory]
+    [InlineData("seed")]
+    [InlineData("transfer:nao-e-guid")]
+    public void External_id_sem_operacao_nao_tem_codigo(string externalId) =>
+        Assert.Null(LedgerTransaction.OperationIdOf(externalId));
 }

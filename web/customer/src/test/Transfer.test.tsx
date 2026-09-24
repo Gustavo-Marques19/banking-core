@@ -54,6 +54,7 @@ describe("Transferir", () => {
     await user.dblClick(await screen.findByRole("button", { name: "Confirmar transferência" }));
 
     expect(await screen.findByRole("heading", { name: "Transferência concluída" })).toBeTruthy();
+    expect(screen.getByText("t1", { selector: ".code__value" })).toBeTruthy();
     expect(keysOf(fetchMock)).toHaveLength(1);
     const body = JSON.parse(String(fetchMock.mock.calls.find(([path]) => path === "/api/v1/transfers")![1]!.body));
     expect(body).toMatchObject({ sourceAccountId: "acc-me", destinationAccountId: "acc-bruno", amount: "1234.50", currency: "BRL" });

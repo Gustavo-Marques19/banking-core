@@ -88,6 +88,7 @@ public interface ILimitUsageStore
 
 public sealed record StatementLine(
     Guid TransactionId,
+    Guid? OperationId,
     string Type,
     string Description,
     string Direction,

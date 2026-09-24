@@ -36,6 +36,17 @@ public sealed class LedgerTransaction
 
     public IReadOnlyList<LedgerEntry> Entries => _entries;
 
+    /// <summary>
+    /// Id da operação dentro do ExternalId ("transfer:{id}", "external-transfer:{id}:reservation"...). É o id que a
+    /// auditoria registra e o código que o cliente vê no comprovante.
+    /// </summary>
+    public static Guid? OperationIdOf(string externalId)
+    {
+        ArgumentNullException.ThrowIfNull(externalId);
+        var parts = externalId.Split(':');
+        return parts.Length >= 2 && Guid.TryParse(parts[1], out var id) ? id : null;
+    }
+
     public static LedgerTransaction Create(
         string externalId,
         LedgerTransactionType type,

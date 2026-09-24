@@ -65,6 +65,7 @@ internal sealed class AccountReadModel(BankingDbContext db) : IAccountReadModel
             select new
             {
                 transaction.Id,
+                transaction.ExternalId,
                 transaction.Type,
                 transaction.Description,
                 entry.Direction,
@@ -81,6 +82,7 @@ internal sealed class AccountReadModel(BankingDbContext db) : IAccountReadModel
             var currency = Currency.FromCode(r.CurrencyCode);
             return new StatementLine(
                 r.Id,
+                Domain.Ledger.LedgerTransaction.OperationIdOf(r.ExternalId),
                 Application.Common.Codes.Of(r.Type),
                 r.Description,
                 r.Direction == Domain.Ledger.EntryDirection.Debit ? "debit" : "credit",

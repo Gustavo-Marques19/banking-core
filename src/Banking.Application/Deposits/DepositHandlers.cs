@@ -1,4 +1,5 @@
 using Banking.Application.Abstractions;
+using Banking.Application.Audit;
 using Banking.Application.Common;
 using Banking.Application.Idempotency;
 using Banking.Contracts.Events;
@@ -40,6 +41,7 @@ public sealed class MakeDepositHandler(
     ILedger ledger,
     ILimitUsageStore limitUsage,
     IOutbox outbox,
+    IAuditTrail audit,
     DepositLimits limits,
     TimeProvider time)
 {
@@ -110,6 +112,15 @@ public sealed class MakeDepositHandler(
             }
 
             deposits.Add(deposit);
+            audit.Record(AuditEntry.Of(
+                command.Actor,
+                "deposit.create",
+                "deposit",
+                deposit.Id,
+                Outcome(deposit.Status, deposit.RejectionReason),
+                ("accountId", account.Id.ToString()),
+                ("amount", amount.ToDecimalString()),
+                ("currency", amount.Currency.Code)));
             return DepositView.From(deposit);
         }, cancellationToken);
     }
@@ -127,4 +138,7 @@ public sealed class MakeDepositHandler(
     }
 
     private static IdempotentResult<DepositView> Fail(Error error) => new(error, Replayed: false);
+
+    private static string Outcome(DepositStatus status, RejectionReason? reason) =>
+        reason is null ? Codes.Of(status) : $"{Codes.Of(status)}:{Codes.Of(reason)}";
 }

@@ -25,6 +25,7 @@ public sealed class IdempotentExecutor(IUnitOfWork unitOfWork, IIdempotencyStore
             switch (claim.Status)
             {
                 case IdempotencyClaimStatus.Replay:
+                    BankingTelemetry.TransferDuplicate.Add(1, new KeyValuePair<string, object?>("operation", request.Operation));
                     return new(JsonSerializer.Deserialize<T>(claim.StoredResult!, Json)!, Replayed: true);
                 case IdempotencyClaimStatus.Mismatch:
                     return new(KeyReused(), Replayed: false);

@@ -7,9 +7,11 @@ using Banking.Infrastructure;
 using Banking.Infrastructure.Messaging;
 using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Provider;
+using Banking.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddBankingObservability();
 
 var connectionString = builder.Configuration.GetConnectionString("Banking")
     ?? throw new InvalidOperationException("ConnectionStrings:Banking não foi configurada.");
@@ -26,6 +28,7 @@ builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection(Outbo
 builder.Services.Configure<ConsumerOptions>(builder.Configuration.GetSection(ConsumerOptions.SectionName));
 builder.Services.Configure<ProviderOptions>(builder.Configuration.GetSection(ProviderOptions.SectionName));
 builder.Services.Configure<ExternalTransferWorkerOptions>(builder.Configuration.GetSection(ExternalTransferWorkerOptions.SectionName));
+builder.Services.Configure<OperationsOptions>(builder.Configuration.GetSection(OperationsOptions.SectionName));
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddBankingApplication(builder.Configuration);
 builder.Services.AddBankingAuthentication(builder.Configuration);
@@ -35,6 +38,7 @@ var app = builder.Build();
 // Chave de PII ausente ou inválida derruba a subida, em vez de falhar no primeiro cadastro.
 app.Services.GetRequiredService<IDocumentProtector>();
 
+app.UseMiddleware<CorrelationMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
@@ -57,7 +61,8 @@ app.MapGroup("/api/v1")
     .MapAccounts()
     .MapDeposits()
     .MapTransfers()
-    .MapExternalTransfers();
+    .MapExternalTransfers()
+    .MapAudit();
 
 app.MapProviderWebhook();
 app.MapMockProviderAdmin();

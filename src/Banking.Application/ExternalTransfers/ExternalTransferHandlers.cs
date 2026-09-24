@@ -1,5 +1,6 @@
 using Banking.Application.Abstractions;
 using Banking.Application.Accounts;
+using Banking.Application.Audit;
 using Banking.Application.Common;
 using Banking.Application.Idempotency;
 using Banking.Contracts.Events;
@@ -60,6 +61,7 @@ public sealed class CreateExternalTransferHandler(
     ILedger ledger,
     ILimitUsageStore limitUsage,
     IOutbox outbox,
+    IAuditTrail audit,
     TransferLimits limits,
     TimeProvider time)
 {
@@ -118,7 +120,22 @@ public sealed class CreateExternalTransferHandler(
             }
 
             transfers.Add(transfer);
-            return ExternalTransferView.From(transfer);
+            var view = ExternalTransferView.From(transfer);
+            audit.Record(AuditEntry.Of(
+                command.Actor,
+                "external-transfer.create",
+                "external_transfer",
+                transfer.Id,
+                view.RejectionReason is null ? view.Status : $"{view.Status}:{view.RejectionReason}",
+                ("sourceAccountId", source.Id.ToString()),
+                ("amount", view.Amount),
+                ("destinationBank", transfer.DestinationBank)));
+            if (view.RejectionReason is not null)
+            {
+                BankingTelemetry.RecordTransfer("external", "rejected", view.RejectionReason);
+            }
+
+            return view;
         }, cancellationToken);
     }
 
@@ -145,6 +162,7 @@ public sealed class CancelExternalTransferHandler(
     AccountAccess access,
     ILedger ledger,
     IOutbox outbox,
+    IAuditTrail audit,
     TimeProvider time)
 {
     public async Task<Result<ExternalTransferView>> HandleAsync(Actor actor, Guid id, CancellationToken cancellationToken)
@@ -175,6 +193,7 @@ public sealed class CancelExternalTransferHandler(
         }
 
         outbox.Enqueue(new ExternalTransferCancelledV1(transfer.Id, transfer.SourceAccountId, transfer.Amount.ToDecimalString(), transfer.CurrencyCode), now);
+        audit.Record(AuditEntry.Of(actor, "external-transfer.cancel", "external_transfer", transfer.Id, "cancelled"));
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return ExternalTransferView.From(transfer);

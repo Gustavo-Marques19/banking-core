@@ -7,7 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Banking.IntegrationTests.Support;
 
-public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<string, string?>? settings = null)
+public sealed class ApiFactory(
+    string connectionString,
+    IReadOnlyDictionary<string, string?>? settings = null,
+    Action<IServiceCollection>? configureServices = null)
     : WebApplicationFactory<Program>
 {
     public static readonly string PiiEncryptionKey = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -37,6 +40,7 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
         }
 
         builder.ConfigureTestServices(services =>
+        {
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {
                 if (settings?.ContainsKey("Auth:Authority") == true)
@@ -46,6 +50,8 @@ public sealed class ApiFactory(string connectionString, IReadOnlyDictionary<stri
 
                 options.TokenValidationParameters.ValidIssuer = TestTokens.Issuer;
                 options.TokenValidationParameters.IssuerSigningKey = TestTokens.SigningKey;
-            }));
+            });
+            configureServices?.Invoke(services);
+        });
     }
 }

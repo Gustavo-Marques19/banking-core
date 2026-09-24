@@ -1,4 +1,6 @@
 using Banking.Application.Abstractions;
+using Banking.Application.Audit;
+using Banking.Application.Common;
 using Banking.Contracts.Events;
 using Banking.Domain.Ledger;
 using Banking.Domain.Payments;
@@ -16,6 +18,7 @@ public sealed class ExternalTransferProcessor(
     ILedger ledger,
     IBankingProvider provider,
     IOutbox outbox,
+    IAuditTrail audit,
     ExternalTransferSettings settings,
     TimeProvider time)
 {
@@ -110,6 +113,9 @@ public sealed class ExternalTransferProcessor(
             {
                 transfer.FlagForManualReview(now);
                 outbox.Enqueue(new ExternalTransferNeedsReviewV1(transfer.Id, transfer.SourceAccountId, transfer.SubmitAttempts), now);
+                audit.Record(AuditEntry.Of(
+                    Worker, "external-transfer.escalate", "external_transfer", transfer.Id, "needs_review",
+                    ("submitAttempts", transfer.SubmitAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture))));
             }
             else
             {
@@ -129,7 +135,15 @@ public sealed class ExternalTransferProcessor(
 
     private async Task SubmitAsync(Guid id, ProviderTransferRequest request, CancellationToken cancellationToken)
     {
+        using var activity = BankingTelemetry.Source.StartActivity("external-transfer.submit");
+        activity?.SetTag("banking.external_transfer.id", id);
         var result = await provider.SubmitTransferAsync(request, cancellationToken);
+        activity?.SetTag("banking.provider.outcome", result.Outcome.ToString());
+        if (result.Outcome == SubmitOutcome.Unknown)
+        {
+            BankingTelemetry.TransferUnknown.Add(1, new KeyValuePair<string, object?>("reason", result.Reason));
+        }
+
         await ApplyAsync(id, (transfer, reservation, now) =>
             transfer.ApplySubmitResult(result, reservation, now, settings.CheckInterval), cancellationToken);
     }
@@ -165,6 +179,11 @@ public sealed class ExternalTransferProcessor(
         if (transfer.Status != before)
         {
             EnqueueStatusEvent(transfer, now);
+            var status = Codes.Of(transfer.Status);
+            audit.Record(AuditEntry.Of(
+                Worker, "external-transfer.transition", "external_transfer", transfer.Id, $"{Codes.Of(before)}->{status}",
+                ("failureReason", transfer.FailureReason)));
+            BankingTelemetry.RecordTransfer("external", status, transfer.FailureReason);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -187,6 +206,8 @@ public sealed class ExternalTransferProcessor(
             outbox.Enqueue(integrationEvent, now);
         }
     }
+
+    private static readonly Actor Worker = Actor.System("external-transfer-worker");
 
     private static ProviderTransferRequest RequestFor(ExternalTransfer transfer) => new(
         transfer.ClientReference,

@@ -1,5 +1,6 @@
 using Banking.Application.Abstractions;
 using Banking.Application.Accounts;
+using Banking.Application.Audit;
 using Banking.Application.Common;
 using Banking.Application.Idempotency;
 using Banking.Contracts.Events;
@@ -50,6 +51,7 @@ public sealed class CreateTransferHandler(
     ILedger ledger,
     ILimitUsageStore limitUsage,
     IOutbox outbox,
+    IAuditTrail audit,
     TransferLimits limits,
     TimeProvider time)
 {
@@ -148,7 +150,19 @@ public sealed class CreateTransferHandler(
             }
 
             transfers.Add(transfer);
-            return TransferView.From(transfer);
+            var view = TransferView.From(transfer);
+            audit.Record(AuditEntry.Of(
+                command.Actor,
+                "transfer.create",
+                "transfer",
+                transfer.Id,
+                view.RejectionReason is null ? view.Status : $"{view.Status}:{view.RejectionReason}",
+                ("sourceAccountId", source.Id.ToString()),
+                ("destinationAccountId", destination.Id.ToString()),
+                ("amount", view.Amount),
+                ("currency", view.Currency)));
+            BankingTelemetry.RecordTransfer("internal", view.Status, view.RejectionReason);
+            return view;
         }, cancellationToken);
     }
 

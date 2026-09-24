@@ -1,4 +1,5 @@
 using Banking.Application.Abstractions;
+using Banking.Application.Audit;
 using Banking.Application.Common;
 using Banking.Contracts.Events;
 using Banking.Domain.Accounts;
@@ -15,7 +16,7 @@ public sealed record CustomerView(Guid Id, string Name, string Document, string 
 public sealed record RegisterCustomerCommand(Actor Actor, string? Name, string? Document);
 
 public sealed class RegisterCustomerHandler(
-    ICustomerRepository customers, IUnitOfWork unitOfWork, IOutbox outbox, IDocumentProtector protector, TimeProvider time)
+    ICustomerRepository customers, IUnitOfWork unitOfWork, IOutbox outbox, IAuditTrail audit, IDocumentProtector protector, TimeProvider time)
 {
     public async Task<Result<CustomerView>> HandleAsync(RegisterCustomerCommand command, CancellationToken cancellationToken)
     {
@@ -43,6 +44,7 @@ public sealed class RegisterCustomerHandler(
 
         customers.Add(customer);
         outbox.Enqueue(new CustomerRegisteredV1(customer.Id), customer.CreatedAt);
+        audit.Record(AuditEntry.Of(command.Actor, "customer.register", "customer", customer.Id, "completed"));
         try
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);

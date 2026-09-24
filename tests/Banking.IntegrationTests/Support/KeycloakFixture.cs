@@ -62,7 +62,8 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
         var action = WebUtility.HtmlDecode(FormAction().Match(form).Groups[1].Value);
         Assert.False(
             string.IsNullOrEmpty(action),
-            $"Formulário de login do Keycloak não encontrado. Status {(int)page.StatusCode}; início da página: {html[..Math.Min(html.Length, 600)]}");
+            $"Formulário de login do Keycloak não encontrado. Status {(int)page.StatusCode}; URL {authorizeUrl}; "
+            + $"erro: {WebUtility.HtmlDecode(ErrorMessage().Match(html).Groups[1].Value)}");
 
         var response = await browser.PostAsync(
             new Uri(authorizeUrl, action),
@@ -71,6 +72,9 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
         return response.Headers.Location!;
     }
+
+    [GeneratedRegex("class=\"(?:instruction|kc-feedback-text)\"[^>]*>([^<]+)<")]
+    private static partial Regex ErrorMessage();
 
     [GeneratedRegex("<form[^>]*kc-form-login[^>]*>")]
     private static partial Regex LoginForm();

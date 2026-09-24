@@ -177,7 +177,7 @@ Cada milestone termina com **algo demonstrável e testado**. Não avance com tes
   - `postgres`: imagem alpine com **versão fixada** e volume nomeado para os dados;
   - `keycloak`: `start-dev --import-realm`, lendo o realm versionado em `.devcontainer/keycloak/realm-banking.json`.
 - [ ] Feature `docker-in-docker`, para que os Testcontainers funcionem dentro do codespace.
-- [ ] `postCreateCommand`: `dotnet restore` e `dotnet tool restore` (dotnet-ef fixado em `.config/dotnet-tools.json`).
+- [ ] `postCreateCommand`: `dotnet restore` e `dotnet tool restore` (dotnet-ef fixado em `dotnet-tools.json` na raiz, o padrão do .NET 10) e migrations aplicadas.
 - [ ] Script de init do Postgres criando as roles `migrator` e `app`. O ambiente já nasce com a separação de privilégios.
 - [ ] `forwardPorts` para a API, o Keycloak e o Aspire Dashboard, com `portsAttributes` definindo labels. Todas as portas ficam **privadas** (o padrão do Codespaces). Nunca torne pública uma porta do Keycloak ou da API.
 - [ ] Credenciais só de desenvolvimento num `.env.example` versionado. O `.env` real fica no `.gitignore`, e qualquer segredo real vai para os Codespaces secrets.
@@ -190,7 +190,7 @@ Cada milestone termina com **algo demonstrável e testado**. Não avance com tes
 **Critério do passo:** num repositório recém-clonado, "Open in Codespaces" → `dotnet test` passa sem instalar nada à mão. O README ganha o badge "Open in GitHub Codespaces".
 
 Depois do ambiente pronto:
-- [ ] Solução .NET 10: `Banking.Api`, `Banking.Domain`, `Banking.Application`, `Banking.Infrastructure`, `Banking.Contracts` e os testes.
+- [ ] Solução .NET 10: `Banking.Api`, `Banking.Domain`, `Banking.Application`, `Banking.Infrastructure`, `Banking.Contracts`, mais `Banking.ArchitectureTests` e `Banking.IntegrationTests`. `Banking.UnitTests` nasce no M2, junto com o primeiro código de domínio.
 - [ ] O mesmo compose do devcontainer serve de referência para quem quiser rodar localmente com Docker/Colima. Não mantenha dois arquivos divergentes.
 - [ ] Migrations aplicadas pela role `migrator`, com a app conectando como `app` (sem DDL).
 - [ ] CI no GitHub Actions: build, testes (Testcontainers), gitleaks, CodeQL e Dependabot.

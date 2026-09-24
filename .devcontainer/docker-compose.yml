@@ -1,0 +1,48 @@
+# Senhas padrão servem só para desenvolvimento. Para trocar, copie .env.example para .env nesta pasta.
+name: banking-core
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/dotnet:10.0
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+    environment:
+      ConnectionStrings__Banking: Host=postgres;Database=banking;Username=banking_app;Password=${BANKING_APP_PASSWORD:-app-dev-only}
+      BANKING_MIGRATOR_CONNECTION: Host=postgres;Database=banking;Username=banking_migrator;Password=${BANKING_MIGRATOR_PASSWORD:-migrator-dev-only}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  postgres:
+    # Mesma imagem de tests/Banking.IntegrationTests/PostgresFixture.cs.
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev-only}
+      BANKING_MIGRATOR_PASSWORD: ${BANKING_MIGRATOR_PASSWORD:-migrator-dev-only}
+      BANKING_APP_PASSWORD: ${BANKING_APP_PASSWORD:-app-dev-only}
+    volumes:
+      # A partir do Postgres 18 o volume vai em /var/lib/postgresql, não em .../data.
+      - pgdata:/var/lib/postgresql
+      - ../infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h força TCP: o servidor temporário que roda o init só escuta no socket.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d banking"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-only}
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+
+volumes:
+  pgdata:

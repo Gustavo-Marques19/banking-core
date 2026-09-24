@@ -18,10 +18,10 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 - [x] Hostname do Keycloak: o endereço que o navegador vê é diferente do que a API usa (ADR-009). Emissor fixo e metadados pelo endereço interno: `KC_HOSTNAME` com o endereço público e `KC_HOSTNAME_BACKCHANNEL_DYNAMIC`. No Codespaces, `scripts/devcontainer-init.sh` descobre a URL encaminhada; esse caminho não foi verificado num Codespace real.
 
 ### F2: BFF do backoffice
-- [ ] Login OIDC, sessão por cookie, logout.
-- [ ] Anti-CSRF, CSP e headers de segurança.
-- [ ] Proxy para a API com o token do usuário (YARP).
-- [ ] Testes: o navegador nunca recebe token; requisição sem CSRF é recusada; só `operator` e `admin` entram.
+- [x] Login OIDC, sessão por cookie, logout.
+- [x] Anti-CSRF, CSP e headers de segurança.
+- [x] Proxy para a API com o token do usuário (YARP).
+- [x] Testes: o navegador nunca recebe token; requisição sem CSRF é recusada; só `operator` e `admin` entram.
 
 ### F3: backoffice
 - [ ] Fila de aprovações (depósitos e estornos), com "quem pediu não aprova" visível antes do clique.

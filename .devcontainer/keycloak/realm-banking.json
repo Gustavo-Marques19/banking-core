@@ -72,7 +72,7 @@
     {
       "clientId": "banking-backoffice",
       "name": "Backoffice (BFF)",
-      "description": "Usado só pelo BFF do backoffice. Authorization code com PKCE; o navegador nunca recebe token.",
+      "description": "Usado só pelo BFF do backoffice. Authorization code com PKCE; o navegador nunca recebe token. https://localhost é o host dos testes.",
       "enabled": true,
       "publicClient": false,
       "secret": "backoffice-dev-only",
@@ -81,12 +81,13 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://localhost:5180/signin-oidc"
+        "http://localhost:5180/signin-oidc",
+        "https://localhost/signin-oidc"
       ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5180/signout-callback-oidc"
+        "post.logout.redirect.uris": "http://localhost:5180/##https://localhost/"
       },
       "protocolMappers": [
         {
@@ -108,7 +109,7 @@
             "multivalued": "true",
             "jsonType.label": "String",
             "access.token.claim": "true",
-            "id.token.claim": "false",
+            "id.token.claim": "true",
             "userinfo.token.claim": "false"
           }
         }

@@ -148,3 +148,16 @@ test("sair encerra a sessão e volta ao login", async ({ page }) => {
   await page.waitForURL("http://localhost:8080/**");
   await expect(page.getByLabel(/username|usuário/i)).toBeVisible();
 });
+
+test("no celular (375 px) nenhuma tela transborda na horizontal", async ({ page, request }) => {
+  await pendingDeposit(request, "olga", "44444.44");
+  await page.setViewportSize({ width: 375, height: 812 });
+
+  await login(page, "otto");
+  for (const path of ["/", "/revisao-manual", "/reconciliacao", "/auditoria"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `transbordamento em ${path}`).toBeLessThanOrEqual(0);
+  }
+});

@@ -5,7 +5,7 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 ## Decisões
 
 - **BFF em ASP.NET Core.** O navegador nunca recebe token. O BFF faz o login OIDC (authorization code com PKCE), guarda os tokens do lado do servidor e entrega um cookie `HttpOnly`, `Secure`, `SameSite=Strict`, com proteção anti-CSRF. As chamadas passam pelo BFF, que as repassa à API com o token. Um XSS não consegue roubar credencial. (ADR-011)
-- **React com TypeScript e Vite.** Tipos gerados do OpenAPI da API. Dinheiro trafega como string decimal, igual à API, e nunca vira `number` (ADR-002).
+- **React com TypeScript e Vite.** Tipos escritos à mão: as respostas da API não têm schema no OpenAPI (os endpoints devolvem `IResult`), então a geração sairia vazia. Dinheiro trafega como string decimal, igual à API, e nunca vira `number` (ADR-002).
 - **Dois fronts, dois clientes no Keycloak.** Backoffice e app do cliente ficam separados: sessões, permissões e riscos diferentes.
 - **Direção visual por front:** [web/backoffice/DESIGN.md](../web/backoffice/DESIGN.md). O app do cliente terá a sua.
 
@@ -24,12 +24,12 @@ Depois da Fase 1 do backend (M0 a M8). Primeiro o backoffice, depois o app do cl
 - [x] Testes: o navegador nunca recebe token; requisição sem CSRF é recusada; só `operator` e `admin` entram.
 
 ### F3: backoffice
-- [ ] Fila de aprovações (depósitos e estornos), com "quem pediu não aprova" visível antes do clique.
-- [ ] Transferências em revisão manual, com a resolução do F1.
-- [ ] Reconciliação: rodar, ver divergências.
-- [ ] Auditoria por recurso, verificação da cadeia (admin) e busca por trace id.
-- [ ] Estados de vazio, carregando e erro em toda tela.
-- [ ] Testes E2E (Playwright) contra o ambiente completo e checagem de acessibilidade (axe).
+- [x] Fila de aprovações (depósitos e estornos), com "quem pediu não aprova" visível antes do clique.
+- [x] Transferências em revisão manual, com a resolução do F1.
+- [x] Reconciliação: rodar, ver divergências.
+- [x] Auditoria por recurso e verificação da cadeia (admin). Busca por trace id ficou de fora: a API filtra só por recurso; o trace id aparece em cada registro.
+- [x] Estados de vazio, carregando e erro em toda tela.
+- [x] Testes E2E (Playwright) contra o ambiente completo e checagem de acessibilidade (axe).
 
 ### F4: app do cliente
 - [ ] Direção visual própria (nova rodada de perguntas).

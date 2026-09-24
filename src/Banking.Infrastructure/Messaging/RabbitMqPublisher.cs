@@ -9,9 +9,15 @@ public sealed record OutgoingMessage(Guid Id, string RoutingKey, string Payload,
 
 public interface IMessagePublisher
 {
-    /// <summary>Retorna só depois do publisher confirm do broker. Falha lança exceção.</summary>
+    /// <summary>
+    /// Retorna só depois do publisher confirm. Problema da própria mensagem (sem rota, nack) lança
+    /// <see cref="MessageRejectedException"/>; qualquer outra exceção é problema de conexão.
+    /// </summary>
     Task PublishAsync(OutgoingMessage message, CancellationToken cancellationToken);
 }
+
+/// <summary>O broker recebeu e recusou esta mensagem. Só esse tipo de falha leva à dead-letter do outbox.</summary>
+public sealed class MessageRejectedException(string message, Exception innerException) : Exception(message, innerException);
 
 internal sealed class RabbitMqPublisher(RabbitMqConnectionProvider connections, IOptions<MessagingOptions> options)
     : IMessagePublisher, IAsyncDisposable
@@ -42,9 +48,9 @@ internal sealed class RabbitMqPublisher(RabbitMqConnectionProvider connections, 
             await channel.BasicPublishAsync(
                 options.Value.Exchange, message.RoutingKey, mandatory: true, properties, Encoding.UTF8.GetBytes(message.Payload), timeout.Token);
         }
-        catch (PublishReturnException)
+        catch (PublishException error)
         {
-            throw;
+            throw new MessageRejectedException($"Broker recusou {message.RoutingKey}: {error.Message}", error);
         }
         catch
         {

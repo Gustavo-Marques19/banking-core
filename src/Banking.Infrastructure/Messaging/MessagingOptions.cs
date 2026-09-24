@@ -26,6 +26,7 @@ public sealed class OutboxOptions
 
     public int BatchSize { get; set; } = 50;
 
+    /// <summary>Tentativas antes da dead-letter, contando só recusas do broker (sem rota, nack), não quedas de conexão.</summary>
     public int MaxAttempts { get; set; } = 10;
 
     public TimeSpan BaseRetryDelay { get; set; } = TimeSpan.FromSeconds(1);

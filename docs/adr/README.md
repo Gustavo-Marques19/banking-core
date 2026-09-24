@@ -8,7 +8,7 @@
 | [004](0004-concorrencia.md) | `FOR UPDATE` ordenado em `account_balances` | aceita, números pendentes (M4) |
 | [005](0005-idempotencia.md) | Idempotência no Postgres, na mesma transação, com escopo por cliente | aceita |
 | [006](0006-transferencia-interna-e-externa.md) | Transferência interna síncrona, externa como saga com Clearing | aceita |
-| 007 | Outbox e inbox | a escrever no M5 |
+| [007](0007-outbox-e-inbox.md) | Outbox com SKIP LOCKED e publisher confirm, inbox no consumidor | aceita |
 | [008](0008-imutabilidade-no-banco.md) | Banco como autoridade de saldo, sequência e balanceamento | aceita |
 | 009 | Autenticação e autorização | a escrever no M3 |
 | [010](0010-ambiente-de-desenvolvimento.md) | Codespaces e GitHub Actions, Vercel descartada | aceita |

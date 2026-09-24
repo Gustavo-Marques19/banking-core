@@ -127,10 +127,14 @@ public sealed partial class OutboxPublisher(
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Broker fora não leva à dead-letter: a mensagem espera o tempo que for preciso. Só recusa da própria mensagem
+    /// conta para <see cref="OutboxOptions.MaxAttempts"/> (ADR-007).
+    /// </summary>
     private async Task MarkFailedAsync(BankingDbContext db, PendingMessage message, Exception error, CancellationToken cancellationToken)
     {
         var attempts = message.Attempts + 1;
-        var deadLettered = attempts >= options.Value.MaxAttempts;
+        var deadLettered = error is MessageRejectedException && attempts >= options.Value.MaxAttempts;
         LogPublishFailed(message.Id, message.Type, attempts, deadLettered, error);
 
         await using var command = DbCommands.InTransaction(

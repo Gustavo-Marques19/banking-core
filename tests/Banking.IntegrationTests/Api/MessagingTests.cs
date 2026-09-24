@@ -55,6 +55,8 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
         var (alice, from) = await bank.NewAccountAsync("100.00");
         var (bruno, to) = await bank.NewAccountAsync();
 
+        // Eventos anteriores publicados: o da transferência vai ser o único pendente durante a queda.
+        await Eventually.TrueAsync(async () => await PendingCountAsync() == 0, "outbox vazio antes da queda");
         await _rabbit.PauseAsync(Ct);
         var transfer = await Transfers.SendAsync(bank, alice, from, to, "10.00");
         await TestBank.EnsureStatusAsync(transfer, HttpStatusCode.Created);
@@ -63,6 +65,10 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
         await Eventually.TrueAsync(
             async () => await OutboxStateAsync(transferId) is ("Pending", >= 1),
             "evento pendente com tentativa de publicação falha");
+
+        // Queda de broker não manda para a dead-letter, por mais tentativas que acumule.
+        await Task.Delay(TimeSpan.FromSeconds(10), Ct);
+        Assert.Equal("Pending", (await OutboxStateAsync(transferId)).Status);
 
         await _rabbit.UnpauseAsync(Ct);
 
@@ -142,6 +148,7 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
             ["Outbox:PollInterval"] = "00:00:00.200",
             ["Outbox:BaseRetryDelay"] = "00:00:00.500",
             ["Outbox:MaxRetryDelay"] = "00:00:02",
+            ["Outbox:MaxAttempts"] = "3",
             ["Consumers:Enabled"] = consumer.ToString(),
             ["Consumers:ReconnectDelay"] = "00:00:00.500",
         });
@@ -176,6 +183,9 @@ public sealed class MessagingTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.True(await reader.ReadAsync(Ct));
         return (reader.GetGuid(0), reader.GetString(1));
     }
+
+    private async Task<long> PendingCountAsync() =>
+        await ScalarAsync("SELECT count(*) FROM platform.outbox_messages WHERE status <> 'Published'");
 
     private async Task<long> NotificationCountAsync(Guid account, string kind) =>
         await ScalarAsync("SELECT count(*) FROM notifications.notifications WHERE account_id = @id AND kind = @kind", ("id", account), ("kind", kind));

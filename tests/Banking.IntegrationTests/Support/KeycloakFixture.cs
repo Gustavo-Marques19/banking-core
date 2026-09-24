@@ -18,7 +18,11 @@ public sealed partial class KeycloakFixture : IAsyncLifetime
             "/opt/keycloak/data/import/",
             fileMode: UnixFileModes.UserRead | UnixFileModes.GroupRead | UnixFileModes.OtherRead)
         .WithCommand("--import-realm")
+        .WithEnvironment("CUSTOMER_PUBLIC_URL", CustomerPublicUrl)
         .Build();
+
+    /// <summary>Endereço público do app do cliente neste Keycloak, como o do Codespaces (placeholder do realm).</summary>
+    public const string CustomerPublicUrl = "https://app.publico.test";
 
     public string Authority => new Uri(new Uri(_container.GetBaseAddress()), "realms/banking").ToString();
 

@@ -72,7 +72,7 @@
     {
       "clientId": "banking-backoffice",
       "name": "Backoffice (BFF)",
-      "description": "Usado só pelo BFF do backoffice. Authorization code com PKCE; o navegador nunca recebe token. https://localhost é o host dos testes.",
+      "description": "Usado só pelo BFF do backoffice. Authorization code com PKCE; o navegador nunca recebe token. https://localhost é o host dos testes. O terceiro endereço vem de BACKOFFICE_PUBLIC_URL (Codespaces).",
       "enabled": true,
       "publicClient": false,
       "secret": "backoffice-dev-only",
@@ -82,12 +82,13 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:5180/signin-oidc",
-        "https://localhost/signin-oidc"
+        "https://localhost/signin-oidc",
+        "${BACKOFFICE_PUBLIC_URL:http://localhost:5180}/signin-oidc"
       ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5180/##https://localhost/"
+        "post.logout.redirect.uris": "http://localhost:5180/##https://localhost/##${BACKOFFICE_PUBLIC_URL:http://localhost:5180}/"
       },
       "protocolMappers": [
         {
@@ -118,7 +119,7 @@
     {
       "clientId": "banking-web",
       "name": "App do cliente (BFF)",
-      "description": "Usado só pelo BFF do app do cliente, mesma configuração do backoffice com outro segredo e outra porta. https://localhost é o host dos testes.",
+      "description": "Usado só pelo BFF do app do cliente, mesma configuração do backoffice com outro segredo e outra porta. https://localhost é o host dos testes. O terceiro endereço vem de CUSTOMER_PUBLIC_URL (Codespaces).",
       "enabled": true,
       "publicClient": false,
       "secret": "web-dev-only",
@@ -128,12 +129,13 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:5190/signin-oidc",
-        "https://localhost/signin-oidc"
+        "https://localhost/signin-oidc",
+        "${CUSTOMER_PUBLIC_URL:http://localhost:5190}/signin-oidc"
       ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5190/##https://localhost/"
+        "post.logout.redirect.uris": "http://localhost:5190/##https://localhost/##${CUSTOMER_PUBLIC_URL:http://localhost:5190}/"
       },
       "protocolMappers": [
         {

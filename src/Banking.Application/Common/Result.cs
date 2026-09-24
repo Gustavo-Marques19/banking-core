@@ -12,7 +12,8 @@ public sealed record Error(ErrorKind Kind, string Code, string Message)
 {
     public static Error Validation(string code, string message) => new(ErrorKind.Validation, code, message);
 
-    public static Error NotFound(string resource) => new(ErrorKind.NotFound, "not_found", $"{resource} não encontrado.");
+    /// <summary>"Conta inexistente.": serve aos dois gêneros e não diz se o recurso de outra pessoa existe (threat model T2).</summary>
+    public static Error NotFound(string resource) => new(ErrorKind.NotFound, "not_found", $"{resource} inexistente.");
 
     public static Error Conflict(string code, string message) => new(ErrorKind.Conflict, code, message);
 
